@@ -67,6 +67,7 @@ In `@OverrideProperty("id")` you can only use literal string parameter.
 &nbsp;  
 &nbsp;  
 
+- Case 3
 If you want to override the `id` property but you can't change the table for some reason(like you are using codegen). You can use the `RootTable` annotation.
 
 ```scala
@@ -91,4 +92,30 @@ val friendTq = TableQuery(cons => new FriendTableExt(new FriendTable(cons)))
 
 `RootTable` will promote all the properties of FriendTable to the root of FriendTableExt. But the properties defined in FriendTableExt will definitely override the properties defined in FriendTable.
 &nbsp;  
+
 Note that: You must use `friendTq.filter(_.ft.name like "myName*")` now.
+
+[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test03.scala)
+&nbsp;  
+&nbsp;  
+
+- Case 4
+You can use `shino.wrap` to lift your column. Then you can use method `map` and `zip` to manipulate the columns.
+
+```scala
+case class Friend(id: Long, name: String, nick: String, age: Int)
+
+class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickMapper {
+  def id   = column[Long]("id", O.AutoInc)
+  def name = shino.wrap(column[String]("name")).map(s => "user name:" + s)(t => Option(t))
+  def nick = column[String]("nick")
+  def age  = column[Int]("age")
+
+  override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
+}
+```
+Shino can map column many times. No need to worry about this [issue](https://github.com/slick/slick/issues/1894).
+
+[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test04.scala)
+&nbsp;  
+&nbsp;  
