@@ -124,7 +124,7 @@ Shino can map column many times. No need to worry about this [issue](https://git
 
 - Case 5  
 
-If the value of columnA depends on columnB, but columnB also needs to be evaluated separately. You can use `RootModel` to avoid selecting columnb twice. But you need to define a case class with the same fields as the original case class first.
+If the value of columnA depends on columnB, but columnB also needs to be evaluated separately. You can use `RootModel` to avoid selecting columnB twice. But you need to define a case class with the same fields as the original case class first.
 
 ```scala
 case class Friend(id: Long, name: String, nick: String, age: Int)
