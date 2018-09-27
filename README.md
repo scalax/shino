@@ -155,6 +155,8 @@ Note that the annotation has expected you to get the val of the `NameAndAge` typ
 &nbsp;  
 &nbsp;  
 
+- Case 6  
+
 If column name, nick, age does not require filters, sortby and so on. They only need to be select, insert and update. You can mixin `ColumnHelper` and override `columnGenerator`. Then you no need to define methods such as name, nick, age.
 
 ```scala
@@ -174,3 +176,7 @@ class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") wi
 
 val friendTq = TableQuery[FriendTable]
 ```
+
+Note that if you must override existing property(like `name` here). You can use `Placeholder.value[String]` to get the same behavior.
+
+[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test06.scala)
