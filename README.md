@@ -186,5 +186,6 @@ val friendTq = TableQuery[FriendTable]
 Note:
 - If you must override existing property(like `name` here). You can use `Placeholder.value[String]` to get the same behavior explicitly.
 - Column id still use `def id`. So if you want to map a specific column, just defining a same name property.
+&nbsp;  
 
 [Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test06.scala)
