@@ -12,6 +12,10 @@ resolvers += Resolver.bintrayRepo("djx314", "maven")
 libraryDependencies += "net.scalax" %% "shino" % "0.0.1-M1"
 ```
 
+Can I use it in production?
+-------------
+Nope. Since the mapping rules in asuna is not stable.
+
 User guide
 -------------
 
