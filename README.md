@@ -121,3 +121,31 @@ Shino can map column many times. No need to worry about this [issue](https://git
 [Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test04.scala)
 &nbsp;  
 &nbsp;  
+
+- Case 5
+If the value of columnA depends on columnB, but columnB also needs to be evaluated separately. You can use `RootModel` to avoid selecting columnb twice. But you need to define a case class with the same fields as the original case class first.
+
+```scala
+case class Friend(id: Long, name: String, nick: String, age: Int)
+case class NameAndAge(name: String, age: Int)
+
+class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickMapper {
+  def id       = column[Long]("id", O.AutoInc)
+  def name_ext = column[String]("name")
+  def nick     = column[String]("nick")
+  def age_ext  = column[Int]("age")
+
+  @RootModel[NameAndAge]
+  def name_age =
+    shino
+      .wrap(name_ext)
+      .zip(shino.wrap(age_ext))
+      .map { case (name, age) => NameAndAge("user name:" + name + ", age:" + age, age) }(t => Option((t.name, t.age)))
+
+  override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
+}
+
+val friendTq = TableQuery[FriendTable]
+```
+
+Note that the annotation has expected you to get the val of the `NameAndAge` type. It can be either Rep[NameAndAge] or a value that is manipulated by `shino.wrap`.
