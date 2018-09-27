@@ -149,7 +149,7 @@ class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") wi
 val friendTq = TableQuery[FriendTable]
 ```
 
-Note that the annotation has expected you to get the val of the `NameAndAge` type. It can be either Rep[NameAndAge] or a value that is manipulated by `shino.wrap`.
+Note that the annotation has expected you to get the val of type `NameAndAge`. It can be either Rep[NameAndAge] or a value that is manipulated by `shino.wrap`.
 
 [Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test05.scala)
 &nbsp;  
