@@ -122,7 +122,8 @@ Shino can map column many times. No need to worry about this [issue](https://git
 &nbsp;  
 &nbsp;  
 
-- Case 5
+- Case 5  
+
 If the value of columnA depends on columnB, but columnB also needs to be evaluated separately. You can use `RootModel` to avoid selecting columnb twice. But you need to define a case class with the same fields as the original case class first.
 
 ```scala
@@ -149,3 +150,27 @@ val friendTq = TableQuery[FriendTable]
 ```
 
 Note that the annotation has expected you to get the val of the `NameAndAge` type. It can be either Rep[NameAndAge] or a value that is manipulated by `shino.wrap`.
+
+[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test05.scala)
+&nbsp;  
+&nbsp;  
+
+If column name, nick, age does not require filters, sortby and so on. They only need to be select, insert and update. You can mixin `ColumnHelper` and override `columnGenerator`. Then you no need to define methods such as name, nick, age.
+
+```scala
+case class Friend(id: Long, name: String, nick: String, age: Int)
+
+class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickMapper with ColumnHelper {
+  def id   = column[Long]("id", O.AutoInc)
+  def name = Placeholder.value[String]
+
+  override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
+
+  override def columnGenerator[D](name: String, typedType: TypedType[D]): Rep[D] = {
+    val newName = toSnakeName(name)
+    column(newName)(typedType)
+  }
+}
+
+val friendTq = TableQuery[FriendTable]
+```
