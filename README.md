@@ -183,6 +183,8 @@ class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") wi
 val friendTq = TableQuery[FriendTable]
 ```
 
-Note that if you must override existing property(like `name` here). You can use `Placeholder.value[String]` to get the same behavior explicitly.
+Note:
+- If you must override existing property(like `name` here). You can use `Placeholder.value[String]` to get the same behavior explicitly.
+- Column id still use `def id`. So if you want to map a specific column, just defining a same name property.
 
 [Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test06.scala)
