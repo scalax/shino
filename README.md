@@ -68,6 +68,7 @@ In `@OverrideProperty("id")` you can only use literal string parameter.
 &nbsp;  
 
 - Case 3  
+
 If you want to override the `id` property but you can't change the table for some reason(like you are using codegen). You can use the `RootTable` annotation.
 
 ```scala
@@ -100,6 +101,7 @@ Note that: You must use `friendTq.filter(_.ft.name like "myName*")` now.
 &nbsp;  
 
 - Case 4  
+
 You can use `shino.wrap` to lift your column. Then you can use method `map` and `zip` to manipulate the columns.
 
 ```scala
