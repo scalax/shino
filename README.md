@@ -15,6 +15,8 @@ libraryDependencies += "net.scalax" %% "shino" % "0.0.1-M1"
 User guide
 -------------
 
+- Case 1  
+
 Easily use it by mixing `SlickMapper` trait.
 
 ```scala
@@ -37,6 +39,8 @@ Shino will automatically correspond to the properties of FriendTable and Friend.
 [Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test01.scala)
 &nbsp;  
 &nbsp;  
+- Case 2  
+
 If you want to use `id.?` to map id column and donot want to change the original value. You can use the `OverrideProperty` annotation.
 
 ```scala
@@ -57,7 +61,7 @@ class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") wi
 val friendTq = TableQuery[FriendTable]
 ```
 
-In `@OverrideProperty("id")` you can only use literal string parameter `.
+In `@OverrideProperty("id")` you can only use literal string parameter.  
 [Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test02.scala)
 &nbsp;  
 &nbsp;  
