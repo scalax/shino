@@ -177,7 +177,7 @@ class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") wi
     val newName = toSnakeName(name)
     column(newName)(typedType)
   }
-  
+
 }
 
 val friendTq = TableQuery[FriendTable]
