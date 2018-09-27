@@ -163,6 +163,7 @@ If column name, nick, age does not require filters, sortby and so on. They only 
 case class Friend(id: Long, name: String, nick: String, age: Int)
 
 class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickMapper with ColumnHelper {
+
   def id   = column[Long]("id", O.AutoInc)
   def name = Placeholder.value[String]
 
@@ -172,6 +173,7 @@ class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") wi
     val newName = toSnakeName(name)
     column(newName)(typedType)
   }
+  
 }
 
 val friendTq = TableQuery[FriendTable]
