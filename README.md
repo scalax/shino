@@ -90,5 +90,5 @@ val friendTq = TableQuery(cons => new FriendTableExt(new FriendTable(cons)))
 ```
 
 `RootTable` will promote all the properties of FriendTable to the root of FriendTableExt. But the properties defined in FriendTableExt will definitely override the properties defined in FriendTable.
-#nbsp;  
-Note that:
+&nbsp;  
+Note that: You must use `friendTq.filter(_.ft.name like "myName*")` now.
