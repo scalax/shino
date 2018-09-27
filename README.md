@@ -1,6 +1,6 @@
 # shino
 
-An auto mapper for scala [slick](https://github.com/slick/slick) base on [asuna](https://github.com/scalax/asuna).
+An auto mapper for scala [slick](https://github.com/slick/slick) base on [asuna](https://github.com/scalax/asuna). Type safe, type driven, no runtime reflection.
 
 How to get it
 -------------
