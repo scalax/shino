@@ -100,8 +100,11 @@ class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") wi
 }
 
 trait FriendTableExt {
+
   @RootTable val ft: FriendTable
+
   def id = ft.id.?
+
 }
 
 val friendTq2 = TableQuery[FriendTable]
