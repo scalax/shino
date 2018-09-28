@@ -67,6 +67,7 @@ val friendTq = TableQuery[FriendTable]
 ```
 
 In `@OverrideProperty("id")` you can only use literal string parameter.  
+
 [Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test02.scala)
 &nbsp;  
 &nbsp;  
