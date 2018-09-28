@@ -10,28 +10,39 @@ import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import org.slf4j.LoggerFactory
 
-import scala.annotation.meta.field
 import scala.concurrent.{duration, Await, Future}
 
 class Test03 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
 
   case class Friend(id: Option[Long], name: String, nick: String, age: Int)
 
-  class FriendTable(tag: slick.lifted.Tag) extends Table[Unit](tag, "firend") with SlickMapper {
+  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickMapper {
+    self =>
+
     def id   = column[Long]("id", O.AutoInc)
     def name = column[String]("name")
     def nick = column[String]("nick")
     def age  = column[Int]("age")
 
-    override def * = ()
+    override def * =
+      shino
+        .effect(
+            shino
+            .singleModel[Friend](new FriendTableExt {
+              override val ft = self
+            }: FriendTableExt)
+            .compile
+        )
+        .shape
+
   }
 
-  class FriendTableExt(@(RootTable @field) val ft: FriendTable) extends Table[Friend](ft.tableTag, ft.tableName) with SlickMapper {
-    def id         = ft.id.?
-    override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
+  trait FriendTableExt {
+    @RootTable val ft: FriendTable
+    def id = ft.id.?
   }
 
-  val friendTq2 = TableQuery(cons => new FriendTableExt(new FriendTable(cons)))
+  val friendTq2 = TableQuery[FriendTable]
 
   val local = new Locale("zh", "CN")
   val faker = new Faker(local)
@@ -57,7 +68,7 @@ class Test03 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
   }
 
   "shape" should "auto map with table and case class" in {
-    val insert = friendTq2.returning(friendTq2.map(_.ft.id))
+    val insert = friendTq2.returning(friendTq2.map(_.id))
 
     val friend1DBIO = insert += friend1
     val friend2DBIO = insert += friend2

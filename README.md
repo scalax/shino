@@ -78,27 +78,36 @@ If you want to override the `id` property but you can't change the table for som
 ```scala
 case class Friend(id: Option[Long], name: String, nick: String, age: Int)
 
-class FriendTable(tag: slick.lifted.Tag) extends Table[Unit](tag, "firend") with SlickMapper {
+class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickMapper {
+  self =>
+
   def id   = column[Long]("id", O.AutoInc)
   def name = column[String]("name")
   def nick = column[String]("nick")
   def age  = column[Int]("age")
 
-  override def * = ()
+  override def * =
+    shino
+      .effect(
+          shino
+          .singleModel[Friend](new FriendTableExt {
+            override val ft = self
+          }: FriendTableExt)
+          .compile
+      )
+      .shape
+
 }
 
-class FriendTableExt(@(RootTable @field) val ft: FriendTable) extends Table[Friend](ft.tableTag, ft.tableName) with SlickMapper {
-  def id         = ft.id.?
-  override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
+trait FriendTableExt {
+  @RootTable val ft: FriendTable
+  def id = ft.id.?
 }
 
-val friendTq = TableQuery(cons => new FriendTableExt(new FriendTable(cons)))
+val friendTq2 = TableQuery[FriendTable]
 ```
 
 `RootTable` will promote all the properties of FriendTable to the root of FriendTableExt. But the properties defined in FriendTableExt will definitely override the properties defined in FriendTable.
-&nbsp;  
-
-Note that: You must use `friendTq.filter(_.ft.name like "myName*")` now.
 
 [Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test03.scala)
 &nbsp;  
