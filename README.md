@@ -87,15 +87,7 @@ class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") wi
   def age  = column[Int]("age")
 
   override def * =
-    shino
-      .effect(
-          shino
-          .singleModel[Friend](new FriendTableExt {
-            override val ft = self
-          }: FriendTableExt)
-          .compile
-      )
-      .shape
+    shino.effect(shino.singleModel[Friend](new FriendTableExt { override val ft = self }: FriendTableExt).compile).shape
 
 }
 
