@@ -9,7 +9,7 @@ Add dependency
 
 ```scala
 resolvers += Resolver.bintrayRepo("djx314", "maven")
-libraryDependencies += "net.scalax" %% "shino" % "0.0.1-M1"
+libraryDependencies += "net.scalax" %% "shino" % "0.0.2-SNAP20180929.1"
 ```
 
 Can I use it in production?
@@ -111,7 +111,7 @@ val friendTq2 = TableQuery[FriendTable]
 
 - Case 4  
 
-You can use `shino.wrap` to lift your column. Then you can use method `map` and `zip` to manipulate the columns.
+You can use `shino.shaped` to lift your column. Then you can use method `fmap` and `fzip` to manipulate the columns.
 
 ```scala
 case class Friend(id: Long, name: String, nick: String, age: Int)
@@ -149,10 +149,9 @@ class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") wi
 
   @RootModel[NameAndAge]
   def name_age =
-    shino
-      .wrap(name_ext)
-      .zip(shino.wrap(age_ext))
-      .map { case (name, age) => NameAndAge("user name:" + name + ", age:" + age, age) }(t => Option((t.name, t.age)))
+    shino.shaped(name_ext)
+      .fzip(shino.shaped(age_ext))
+      .fmap { case (name, age) => NameAndAge("user name:" + name + ", age:" + age, age) }(t => (t.name, t.age))
 
   override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
 }
@@ -160,7 +159,7 @@ class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") wi
 val friendTq = TableQuery[FriendTable]
 ```
 
-Note that the annotation has expected you to get the val of type `NameAndAge`. It can be either Rep[NameAndAge] or a value that is manipulated by `shino.wrap`.
+Note that the annotation has expected you to get the val of type `NameAndAge`. It can be either Rep[NameAndAge] or a value that is manipulated by `shino.shaped`.
 
 [Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test05.scala)
 &nbsp;  

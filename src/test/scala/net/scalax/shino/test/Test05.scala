@@ -33,7 +33,7 @@ class Test05 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
   }
 
-  val friendTq2 = TableQuery[FriendTable]
+  val friendTq = TableQuery[FriendTable]
 
   val local = new Locale("zh", "CN")
   val faker = new Faker(local)
@@ -45,7 +45,7 @@ class Test05 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
   val db = Database.forURL(s"jdbc:h2:mem:test05;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
 
   override def beforeAll = {
-    await(db.run(friendTq2.schema.create))
+    await(db.run(friendTq.schema.create))
   }
 
   val friend1 = Friend(-1, faker.name.name, faker.weather.description, 23)
@@ -55,18 +55,18 @@ class Test05 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
   before {}
 
   after {
-    await(db.run(friendTq2.delete))
+    await(db.run(friendTq.delete))
   }
 
   "shape" should "auto map with table and case class" in {
-    val insert = friendTq2.returning(friendTq2.map(_.id))
+    val insert = friendTq.returning(friendTq.map(_.id))
 
     val friend1DBIO = insert += friend1
     val friend2DBIO = insert += friend2
     val friend3DBIO = insert += friend3
 
     val insertIds = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
-    val result    = await(db.run(friendTq2.result))
+    val result    = await(db.run(friendTq.result))
 
     insertIds.size should be(3)
     insertIds.map { s =>
