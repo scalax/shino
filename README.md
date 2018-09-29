@@ -9,7 +9,7 @@ Add dependency
 
 ```scala
 resolvers += Resolver.bintrayRepo("djx314", "maven")
-libraryDependencies += "net.scalax" %% "shino" % "0.0.2-SNAP20180929.1"
+libraryDependencies += "net.scalax" %% "shino" % "0.0.2-SNAP20180930.1"
 ```
 
 Can I use it in production?
