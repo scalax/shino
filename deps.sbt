@@ -1,7 +1,7 @@
 resolvers += Resolver.bintrayRepo(owner = "djx314", repo = "releases")
 resolvers += Resolver.sonatypeRepo("releases")
 
-libraryDependencies += "net.scalax" %% "asuna-mapper" % "0.0.2-SNAP20180929.1"
+libraryDependencies += "net.scalax" %% "asuna-mapper" % "0.0.2-SNAP20180930.1"
 
 val slickVersion = "3.2.3"
 
