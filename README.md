@@ -67,6 +67,7 @@ val friendTq = TableQuery[FriendTable]
 ```
 
 In `@OverrideProperty("id")` you can only use literal string parameter.  
+
 [Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test02.scala)
 &nbsp;  
 &nbsp;  
@@ -87,21 +88,16 @@ class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") wi
   def age  = column[Int]("age")
 
   override def * =
-    shino
-      .effect(
-          shino
-          .singleModel[Friend](new FriendTableExt {
-            override val ft = self
-          }: FriendTableExt)
-          .compile
-      )
-      .shape
+    shino.effect(shino.singleModel[Friend](new FriendTableExt { override val ft = self }: FriendTableExt).compile).shape
 
 }
 
 trait FriendTableExt {
+
   @RootTable val ft: FriendTable
+
   def id = ft.id.?
+
 }
 
 val friendTq2 = TableQuery[FriendTable]

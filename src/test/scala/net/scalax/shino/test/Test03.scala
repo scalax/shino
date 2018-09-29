@@ -38,8 +38,11 @@ class Test03 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
   }
 
   trait FriendTableExt {
+
     @RootTable val ft: FriendTable
+
     def id = ft.id.?
+
   }
 
   val friendTq2 = TableQuery[FriendTable]
