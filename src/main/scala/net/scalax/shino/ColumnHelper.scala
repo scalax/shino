@@ -23,13 +23,10 @@ trait ColumnHelper {
         type Rep1[R] = slick.lifted.Rep[R]
 
         new SlickShapeValueWrap[D] {
-          override type Data  = D
           override type Rep   = Rep1[D]
           override type Level = T
-          override val shape                            = shape1
-          override val rep                              = columnGenerator(base.columnInfo.modelColumnName, typedType)
-          override def convert(data: D): D              = data
-          override def cusBuildData(data: D): Option[D] = Option(data)
+          override val shape = shape1
+          override val rep   = columnGenerator(base.columnInfo.modelColumnName, typedType)
         }
       }
       override def toLawRep(base: SlickShapeValueWrap[D], oldRep: SlickShapeValueWrap[(Any, Any)]): SlickShapeValueWrap[(Any, Any)] =

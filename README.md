@@ -122,12 +122,14 @@ case class Friend(id: Long, name: String, nick: String, age: Int)
 
 class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickMapper {
   def id   = column[Long]("id", O.AutoInc)
-  def name = shino.wrap(column[String]("name")).map(s => "user name:" + s)(t => Option(t))
+  def name = shino.shaped(column[String]("name")).fmap(s => "user name:" + s)(t => t)
   def nick = column[String]("nick")
   def age  = column[Int]("age")
 
   override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
 }
+
+val friendTq = TableQuery[FriendTable]
 ```
 Shino can map column many times. No need to worry about this [issue](https://github.com/slick/slick/issues/1894).
 

@@ -13,17 +13,12 @@ trait SlickMapper {
     def shape(implicit classTag: ClassTag[DataType]): MappedProjection[DataType, Any]
   }
 
-  private val unitInstance = new SlickShapeValueWrap[(Any, Any)] {
+  private val unitInstance = new SlickShapeValueWrap[(Unit, Unit)] {
     override type Rep   = (Unit, Unit)
-    override type Data  = (Unit, Unit)
     override type Level = FlatShapeLevel
     override val rep   = ((), ())
     override val shape = Shape.tuple2Shape[FlatShapeLevel, Unit, Unit, Unit, Unit, Unit, Unit](Shape.unitShape[FlatShapeLevel], Shape.unitShape[FlatShapeLevel])
-    override def convert(data: Data): (Any, Any) = {
-      (data._1: Any, data._2: Any)
-    }
-    override def cusBuildData(data: (Any, Any)): Option[(Unit, Unit)] = Option(((), ()))
-  }
+  }.asInstanceOf[SlickShapeValueWrap[(Any, Any)]]
 
   object shino extends FormatterWrapperHelper[SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any), UmrWrapper] {
     override def effect[Rep, D, Out](
@@ -35,19 +30,17 @@ trait SlickMapper {
           wrapCol
         , unitInstance
       )
-      val s = reps.map { (t: (Any, Any)) =>
-        shape1.takeData(wrapCol, t).current
-      } { r =>
-        Option(shape1.buildData(r, wrapCol, null))
-      }
       new UmrWrapper[Out, D] {
         override def shape(implicit classTag: ClassTag[D]): MappedProjection[D, Any] = {
-          ShapedValue(s.rep, s.shape)
-            .<>[D](f = { r =>
-              s.convert(r)
-            }, g = { (r: D) =>
-              s.cusBuildData(r)
-            })
+          ShapedValue(reps.rep, reps.shape)
+            .<>(
+                { (t: (Any, Any)) =>
+                shape1.takeData(wrapCol, t).current
+              }
+              , { r: D =>
+                Option(shape1.buildData(r, wrapCol, ((), ())))
+              }
+            )
             .asInstanceOf[MappedProjection[D, Any]]
         }
       }
@@ -63,13 +56,10 @@ trait SlickMapper {
       override def wrapRep(base: R): SlickShapeValueWrap[D] = {
         val shape1 = shape
         new SlickShapeValueWrap[D] {
-          override type Data  = D
           override type Rep   = T
           override type Level = L
-          override val shape                            = shape1.packedShape
-          override val rep                              = shape1.pack(base)
-          override def convert(data: D): D              = data
-          override def cusBuildData(data: D): Option[D] = Option(data)
+          override val shape = shape1.packedShape
+          override val rep   = shape1.pack(base)
         }
       }
       override def toLawRep(base: SlickShapeValueWrap[D], oldRep: SlickShapeValueWrap[(Any, Any)]): SlickShapeValueWrap[(Any, Any)] =

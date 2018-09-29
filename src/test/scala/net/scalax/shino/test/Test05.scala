@@ -26,9 +26,9 @@ class Test05 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     @RootModel[NameAndAge]
     def name_age =
       shino
-        .wrap(name_ext)
-        .zip(shino.wrap(age_ext))
-        .map { case (name, age) => NameAndAge("user name:" + name + ", age:" + age, age) }(t => Option((t.name, t.age)))
+        .shaped(name_ext)
+        .fzip(shino.shaped(age_ext))
+        .fmap { case (name, age) => NameAndAge("user name:" + name + ", age:" + age, age) }(t => (t.name, t.age))
 
     override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
   }
