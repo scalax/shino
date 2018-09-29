@@ -100,7 +100,7 @@ trait FriendTableExt {
 
 }
 
-val friendTq2 = TableQuery[FriendTable]
+val friendTq = TableQuery[FriendTable]
 ```
 
 `RootTable` will promote all the properties of FriendTable to the root of FriendTableExt. But the properties defined in FriendTableExt will definitely override the properties defined in FriendTable.
