@@ -3,7 +3,7 @@ package net.scalax.shino.test
 import java.util.Locale
 
 import com.github.javafaker.Faker
-import net.scalax.shino.SlickMapper
+import net.scalax.shino.umr.SlickMapper
 import slick.jdbc.H2Profile.api._
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures

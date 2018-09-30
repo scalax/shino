@@ -1,4 +1,4 @@
-package net.scalax.shino
+package net.scalax.shino.umr
 
 import net.scalax.asuna.core.decoder.SplitData
 import net.scalax.asuna.core.formatter.FormatterShape
@@ -7,11 +7,11 @@ import slick.lifted.{FlatShapeLevel, MappedProjection, Shape, ShapedValue}
 
 import scala.reflect.ClassTag
 
-trait SlickMapper {
+trait UmrWrapper[RepOut, DataType] extends FormatterContent[RepOut, DataType] {
+  def shape(implicit classTag: ClassTag[DataType]): MappedProjection[DataType, Any]
+}
 
-  trait UmrWrapper[RepOut, DataType] extends FormatterContent[RepOut, DataType] {
-    def shape(implicit classTag: ClassTag[DataType]): MappedProjection[DataType, Any]
-  }
+trait SlickMapper {
 
   private val unitInstance = new SlickShapeValueWrap[(Unit, Unit)] {
     override type Rep   = (Unit, Unit)

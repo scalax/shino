@@ -1,4 +1,4 @@
-package net.scalax.shino
+package net.scalax.shino.umr
 
 import net.scalax.asuna.core.common.Placeholder
 import net.scalax.asuna.core.decoder.SplitData

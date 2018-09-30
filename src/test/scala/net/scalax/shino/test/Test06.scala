@@ -4,7 +4,7 @@ import java.util.Locale
 
 import com.github.javafaker.Faker
 import net.scalax.asuna.core.common.Placeholder
-import net.scalax.shino.{ColumnHelper, SlickMapper}
+import net.scalax.shino.umr.{ColumnHelper, SlickMapper}
 import slick.jdbc.H2Profile.api._
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures

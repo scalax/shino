@@ -1,4 +1,4 @@
-package net.scalax.shino
+package net.scalax.shino.umr
 
 import slick.lifted.{FlatShapeLevel, Shape}
 
