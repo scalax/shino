@@ -39,3 +39,9 @@ trait SortByContent {
   }
 
 }
+object SortByContent {
+  def apply(columnName: String, ordered: SOrdered): SortByContent = new SortByContent {
+    override val key      = columnName
+    override val orderPro = ordered
+  }
+}

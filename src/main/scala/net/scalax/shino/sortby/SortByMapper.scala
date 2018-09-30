@@ -46,20 +46,38 @@ trait SortByMapper {
     }
   }
 
-  implicit def sortbyColumnRepImplicit[D](
+  implicit def sortbyColumnRepImplicit1[D](
       implicit orderMap: D => SOrdered
-  ): EncoderShape.Aux[RepColumnContent[D, NullsOrdering], NullsOrdering, (String, SOrdered), Map[String, SOrdered], Map[String, (SOrdered, NullsOrdering)]] = {
+  ): EncoderShape.Aux[RepColumnContent[D, NullsOrdering], NullsOrdering, SortByContent, Map[String, SOrdered], Map[String, (SOrdered, NullsOrdering)]] = {
     new EncoderShape[RepColumnContent[D, NullsOrdering], Map[String, SOrdered], Map[String, (SOrdered, NullsOrdering)]] {
-      override type Target = (String, SOrdered)
+      override type Target = SortByContent
       override type Data   = NullsOrdering
-      override def wrapRep(base: RepColumnContent[D, NullsOrdering]): (String, SOrdered)                    = (base.columnInfo.modelColumnName, orderMap(base.rep))
-      override def toLawRep(base: (String, SOrdered), oldRep: Map[String, SOrdered]): Map[String, SOrdered] = oldRep + base
+      override def wrapRep(base: RepColumnContent[D, NullsOrdering]): SortByContent                    = SortByContent(base.columnInfo.modelColumnName, orderMap(base.rep))
+      override def toLawRep(base: SortByContent, oldRep: Map[String, SOrdered]): Map[String, SOrdered] = oldRep + ((base.key, base.orderPro))
       override def buildData(
           data: NullsOrdering
-        , rep: (String, SOrdered)
+        , rep: SortByContent
         , oldData: Map[String, (SOrdered, NullsOrdering)]
       ): Map[String, (SOrdered, NullsOrdering)] = {
-        oldData + ((rep._1, (rep._2, data)))
+        oldData + ((rep.key, (rep.orderPro, data)))
+      }
+    }
+  }
+
+  implicit def sortbyColumnRepImplicit2[D](
+      implicit orderMap: D => SOrdered
+  ): EncoderShape.Aux[SortByContent, NullsOrdering, SortByContent, Map[String, SOrdered], Map[String, (SOrdered, NullsOrdering)]] = {
+    new EncoderShape[SortByContent, Map[String, SOrdered], Map[String, (SOrdered, NullsOrdering)]] {
+      override type Target = SortByContent
+      override type Data   = NullsOrdering
+      override def wrapRep(base: SortByContent): SortByContent                                         = base
+      override def toLawRep(base: SortByContent, oldRep: Map[String, SOrdered]): Map[String, SOrdered] = oldRep + ((base.key, base.orderPro))
+      override def buildData(
+          data: NullsOrdering
+        , rep: SortByContent
+        , oldData: Map[String, (SOrdered, NullsOrdering)]
+      ): Map[String, (SOrdered, NullsOrdering)] = {
+        oldData + ((rep.key, (rep.orderPro, data)))
       }
     }
   }
