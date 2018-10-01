@@ -7,9 +7,10 @@ import net.scalax.shino.sortby.{NullsOrdering, SortBy}
 import slick.lifted.{Ordered => SOrdered}
 
 trait SortByParameter {
-  val emptySortBy = new SOrdered(IndexedSeq.empty)
   def allowMap: Map[String, NullsOrdering]
-  def singleSort(columnName: String, direction: String, nullsOrdering: String = SortBy.NOTHING): Option[SOrdered]
+  def sort(columnName: String, direction: String, nullsOrdering: String = SortBy.NOTHING): Option[SOrdered]
+  def strictSort(columnName: String, direction: String, nullsOrdering: String = SortBy.NOTHING): Either[SortByErrorContent, SOrdered]
+
 }
 
 trait SortByWrapper[RepOut, DataType] extends EncoderContent[RepOut, DataType] {
@@ -28,7 +29,9 @@ trait SortByMapper {
         override def inputData(data: D): SortByParameter = {
           val sortByMap: Map[String, (SOrdered, NullsOrdering)] = shape1.buildData(data, wrapCol, Map.empty)
           new SortByParameter {
-            override def singleSort(columnName: String, direction: String, nullsOrdering: String): Option[SOrdered] = {
+            self =>
+
+            override def sort(columnName: String, direction: String, nullsOrdering: String): Option[SOrdered] = {
               sortByMap.get(columnName).flatMap {
                 case (ordered, nullsOrderingOpt) =>
                   val dOpt = nullsOrderingOpt.inputDirection(direction)
@@ -40,6 +43,16 @@ trait SortByMapper {
               }
             }
             override def allowMap: Map[String, NullsOrdering] = sortByMap.map { case (key, value) => (key, value._2) }
+
+            override def strictSort(columnName: String, direction: String, nullsOrdering: String): Either[SortByErrorContent, SOrdered] = {
+              sort(columnName, direction, nullsOrdering) match {
+                case Some(s) => Right(s)
+                case _ =>
+                  Left(SortByErrorContentImpl(key = columnName, direction = direction, nullsParameter = nullsOrdering, allowMap = new AllowMap {
+                    override def allowMap = self.allowMap
+                  }))
+              }
+            }
           }
         }
       }

@@ -18,6 +18,7 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
   case class FriendSort(
       id: NullsOrdering = SortBy.all.allNulls
     , name: NullsOrdering = SortBy.all.allNulls
+    , aa: NullsOrdering = SortBy.all.allNulls
   )
   object FriendSort {
     val value: FriendSort = apply()
@@ -28,10 +29,11 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     def name = column[String]("name")
     def nick = column[String]("nick")
     def age  = column[Int]("age")
+    def aa   = name ++ nick
 
     override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
 
-    def orderDef = sortby.effect(sortby.singleModel[FriendSort](this).compile)
+    def orderDef = sortby.effect(sortby.singleModel[FriendSort](this).compile).inputData(FriendSort.value)
   }
 
   val friendTq = TableQuery[FriendTable]
@@ -68,9 +70,12 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
     val insertIds = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
     val result = await(db.run(friendTq.sortBy { s =>
-      val i    = s.orderDef.inputData(FriendSort.value)
-      val sOpt = i.singleSort("id", "asc")
-      sOpt.getOrElse(i.emptySortBy)
+      val i    = s.orderDef
+      val sOpt = SortBy.strictMutiplySort(i.strictSort("id", "asc", SortBy.NULLS_LAST), i.strictSort("name", "desc"))
+      sOpt match {
+        case Right(s) => s
+        case Left(e)  => throw new IllegalArgumentException(e.toString)
+      }
     }.result))
 
     insertIds.size should be(3)

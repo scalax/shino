@@ -1,5 +1,6 @@
 package net.scalax.shino.sortby
 
+import net.scalax.shino.umr.SortByErrorContent
 import slick.lifted.{Ordered => SOrdered}
 
 case class Direction(allowedAsc: Boolean, allowedDesc: Boolean, allowedNothing: Boolean) {
@@ -53,6 +54,8 @@ case class Direction(allowedAsc: Boolean, allowedDesc: Boolean, allowedNothing: 
     }
   }
 
+  override def toString: String = s"""allowedAsc=${allowedAsc}, allowedDesc=${allowedDesc}, allowedNothing=${allowedNothing}"""
+
 }
 
 case class NullsOrdering(direction: Direction, allowedFirst: Boolean, allowedLast: Boolean, allowedDefault: Boolean, allowedNothing: Boolean) {
@@ -102,6 +105,10 @@ case class NullsOrdering(direction: Direction, allowedFirst: Boolean, allowedLas
     }
   }
 
+  override def toString: String =
+    s"direction: ${direction.toString}\n" +
+      s"""nulls: allowedFirst=${allowedFirst}, allowedLast=${allowedLast}, allowedDefault=${allowedDefault}, allowedNothing=${allowedNothing}"""
+
 }
 
 trait SortBy {
@@ -118,6 +125,26 @@ trait SortBy {
   val NULLS_FIRST   = "nullsFirst"
   val NULLS_LAST    = "nullsLast"
   val NULLS_DEFAULT = "nullsDefault"
+
+  val emptySortBy = new SOrdered(IndexedSeq.empty)
+
+  def mutiplySort(d: Option[SOrdered]*): Option[SOrdered] = {
+    d.foldLeft(Option(new SOrdered(IndexedSeq.empty))) { (orderOpt, item) =>
+      for {
+        order <- orderOpt
+        i     <- item
+      } yield new SOrdered(order.columns ++ i.columns)
+    }
+  }
+
+  def strictMutiplySort(s: Either[SortByErrorContent, SOrdered]*): Either[SortByErrorContent, SOrdered] = {
+    s.foldLeft(Right(new SOrdered(IndexedSeq.empty)): Either[SortByErrorContent, SOrdered]) { (orderEi, item) =>
+      for {
+        order <- orderEi.right
+        i     <- item.right
+      } yield new SOrdered(order.columns ++ i.columns)
+    }
+  }
 
 }
 
