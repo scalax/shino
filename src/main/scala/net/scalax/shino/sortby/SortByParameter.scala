@@ -105,15 +105,25 @@ case class NullsOrdering(direction: Direction, allowedFirst: Boolean, allowedLas
     }
   }
 
+  def tagged[T]: OrderingWrap[T] = new OrderingWrap[T] {
+    override val content = self
+  }
+
   override def toString: String =
     s"direction: ${direction.toString}\n" +
       s"""nulls: allowedFirst=${allowedFirst}, allowedLast=${allowedLast}, allowedDefault=${allowedDefault}, allowedNothing=${allowedNothing}"""
 
 }
 
+trait OrderingWrap[R] {
+  val content: NullsOrdering
+}
+
 trait SortBy {
 
   val all: Direction         = Direction(allowedAsc = true, allowedDesc = true, allowedNothing = true)
+  val default: NullsOrdering = all.allNulls
+
   val onlyDesc: Direction    = Direction(allowedAsc = false, allowedDesc = true, allowedNothing = false)
   val onlyAsc: Direction     = Direction(allowedAsc = true, allowedDesc = false, allowedNothing = false)
   val onlyNothing: Direction = Direction(allowedAsc = false, allowedDesc = false, allowedNothing = true)

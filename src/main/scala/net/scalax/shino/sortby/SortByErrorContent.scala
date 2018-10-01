@@ -9,7 +9,7 @@ trait AllowMap {
     allowMap
       .map {
         case (key, value) =>
-          "\n" + s"""${key}:
+          "\n" + s"""name: ${key}
          |${value.toString}""".stripMargin
       }
       .mkString("\n")
@@ -23,13 +23,14 @@ trait SortByErrorContent {
   def allowMap: AllowMap
   override def toString: String = {
     s"""Error sort by parameter:
-       |======================================================
-       |key: ${key}
-       |direction parameter: ${direction}
-       |nulls parameter: ${nullsParameter}
-       |allow parameters:
-       |${allowMap.toString}
-       |======================================================
+      |======================================================
+      |name: ${key}
+      |direction parameter: ${direction}
+      |nulls parameter: ${nullsParameter}
+      |
+      |allow parameters:
+      |${allowMap.toString}
+      |======================================================
      """.stripMargin
   }
 }

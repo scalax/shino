@@ -13,7 +13,7 @@ trait UmrWrapper[RepOut, DataType] extends FormatterContent[RepOut, DataType] {
 
 trait SlickMapper {
 
-  private val unitInstance = new SlickShapeValueWrap[(Unit, Unit)] {
+  val unitInstance = new SlickShapeValueWrap[(Unit, Unit)] {
     override type Rep   = (Unit, Unit)
     override type Level = FlatShapeLevel
     override val rep   = ((), ())

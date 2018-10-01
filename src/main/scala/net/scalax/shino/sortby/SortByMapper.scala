@@ -7,6 +7,7 @@ import net.scalax.shino.sortby.{NullsOrdering, SortBy}
 import slick.lifted.{Ordered => SOrdered}
 
 trait SortByParameter {
+
   def allowMap: Map[String, NullsOrdering]
   def sort(columnName: String, direction: String, nullsOrdering: String = SortBy.NOTHING): Option[SOrdered]
   def strictSort(columnName: String, direction: String, nullsOrdering: String = SortBy.NOTHING): Either[SortByErrorContent, SOrdered]
@@ -42,6 +43,7 @@ trait SortByMapper {
                   } yield n(d(ordered))
               }
             }
+
             override def allowMap: Map[String, NullsOrdering] = sortByMap.map { case (key, value) => (key, value._2) }
 
             override def strictSort(columnName: String, direction: String, nullsOrdering: String): Either[SortByErrorContent, SOrdered] = {
@@ -71,15 +73,12 @@ trait SortByMapper {
           data: NullsOrdering
         , rep: SortByContent
         , oldData: Map[String, (SOrdered, NullsOrdering)]
-      ): Map[String, (SOrdered, NullsOrdering)] = {
-        oldData + ((rep.key, (rep.orderPro, data)))
-      }
+      ): Map[String, (SOrdered, NullsOrdering)] = oldData + ((rep.key, (rep.orderPro, data)))
     }
   }
 
-  implicit def sortbyColumnRepImplicit2[D](
-      implicit orderMap: D => SOrdered
-  ): EncoderShape.Aux[SortByContent, NullsOrdering, SortByContent, Map[String, SOrdered], Map[String, (SOrdered, NullsOrdering)]] = {
+  implicit def sortbyColumnRepImplicit2[D]
+    : EncoderShape.Aux[SortByContent, NullsOrdering, SortByContent, Map[String, SOrdered], Map[String, (SOrdered, NullsOrdering)]] = {
     new EncoderShape[SortByContent, Map[String, SOrdered], Map[String, (SOrdered, NullsOrdering)]] {
       override type Target = SortByContent
       override type Data   = NullsOrdering
@@ -89,9 +88,7 @@ trait SortByMapper {
           data: NullsOrdering
         , rep: SortByContent
         , oldData: Map[String, (SOrdered, NullsOrdering)]
-      ): Map[String, (SOrdered, NullsOrdering)] = {
-        oldData + ((rep.key, (rep.orderPro, data)))
-      }
+      ): Map[String, (SOrdered, NullsOrdering)] = oldData + ((rep.key, (rep.orderPro, data)))
     }
   }
 
