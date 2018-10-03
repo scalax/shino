@@ -1,7 +1,7 @@
 package net.scalax.shino.umr
 
 import net.scalax.asuna.core.decoder.{DecoderShape, SplitData}
-import net.scalax.asuna.core.encoder.EncoderShape
+import net.scalax.asuna.core.encoder.{EncoderShape, EncoderShapeValue}
 import net.scalax.asuna.core.formatter.FormatterShape
 import net.scalax.asuna.mapper.decoder.{DecoderContent, DecoderWrapperHelper}
 import net.scalax.asuna.mapper.encoder.{EncoderContent, EncoderWrapperHelper}
@@ -10,7 +10,7 @@ import slick.lifted.{FlatShapeLevel, MappedProjection, Shape, ShapedValue}
 
 import scala.reflect.ClassTag
 
-trait ShinoWrapper[RepOut, DataType] extends FormatterContent[RepOut, DataType] {
+trait ShinoFormatterWrapper[RepOut, DataType] extends FormatterContent[RepOut, DataType] {
   def shape(implicit classTag: ClassTag[DataType]): MappedProjection[DataType, Any]
 }
 
@@ -31,17 +31,17 @@ trait SlickResultIO {
     override val shape = Shape.tuple2Shape[FlatShapeLevel, Unit, Unit, Unit, Unit, Unit, Unit](Shape.unitShape[FlatShapeLevel], Shape.unitShape[FlatShapeLevel])
   }.asInstanceOf[SlickShapeValueWrap[(Any, Any)]]
 
-  object shino extends FormatterWrapperHelper[SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any), ShinoWrapper] {
+  object shino extends FormatterWrapperHelper[SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any), ShinoFormatterWrapper] {
     override def effect[Rep, D, Out](
         rep: Rep
-    )(implicit shape: FormatterShape.Aux[Rep, D, Out, SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)]): ShinoWrapper[Out, D] = {
+    )(implicit shape: FormatterShape.Aux[Rep, D, Out, SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)]): ShinoFormatterWrapper[Out, D] = {
       val shape1  = shape
       val wrapCol = shape1.wrapRep(rep)
       val reps = shape1.toLawRep(
           wrapCol
         , unitInstance
       )
-      new ShinoWrapper[Out, D] {
+      new ShinoFormatterWrapper[Out, D] {
         override def shape(implicit classTag: ClassTag[D]): MappedProjection[D, Any] = {
           ShapedValue(reps.rep, reps.shape)
             .<>(
@@ -108,6 +108,42 @@ trait SlickResultIO {
             )
             .asInstanceOf[MappedProjection[D, Any]]
         }
+      }
+    }
+
+    trait Setter[Data] {
+      def to(data: Data): EncoderShapeValue[Unit, SlickShapeValueWrap[(Any, Any)], (Any, Any)]
+    }
+
+    def set[Rep, D, Target](rep: Rep)(implicit encoderShape: EncoderShape.Aux[Rep, D, Target, SlickShapeValueWrap[(Any, Any)], (Any, Any)]): Setter[D] = {
+      new Setter[D] {
+        def to(data: D): EncoderShapeValue[Unit, SlickShapeValueWrap[(Any, Any)], (Any, Any)] = {
+          val rep1 = rep
+          new EncoderShapeValue[D, SlickShapeValueWrap[(Any, Any)], (Any, Any)] {
+            override type RepType = Target
+            override val rep   = encoderShape.wrapRep(rep1)
+            override val shape = encoderShape.packed
+          }.emap { _: Unit =>
+            data
+          }
+        }
+      }
+    }
+
+    def sequenceShapeValue(
+        v: EncoderShapeValue[Unit, SlickShapeValueWrap[(Any, Any)], (Any, Any)]*
+    ): EncoderShapeValue[Unit, SlickShapeValueWrap[(Any, Any)], (Any, Any)] = {
+      val list = v.toList
+      shaped(list).emap { i: Unit =>
+        list.map(_ => i)
+      }
+    }
+
+    def sequenceShapeValueCol(
+        v: List[EncoderShapeValue[Unit, SlickShapeValueWrap[(Any, Any)], (Any, Any)]]
+    ): EncoderShapeValue[Unit, SlickShapeValueWrap[(Any, Any)], (Any, Any)] = {
+      shaped(v).emap { i: Unit =>
+        v.map(_ => i)
       }
     }
   }

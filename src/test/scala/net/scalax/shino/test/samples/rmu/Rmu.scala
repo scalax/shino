@@ -1,6 +1,6 @@
 package net.scalax.shino.test
 
-import io.circe.{Decoder, Encoder, Json, JsonObject}
+import io.circe.{Encoder, Json, JsonObject}
 import net.scalax.asuna.core.decoder.DecoderShapeValue
 import net.scalax.asuna.core.encoder.EncoderShape
 import net.scalax.asuna.mapper.common.RepColumnContent
@@ -42,7 +42,6 @@ trait RmuHelper {
   implicit def rmuWrapperRepImplicit1[R, D, T, L <: FlatShapeLevel](
       implicit shape: Shape[L, R, D, T]
     , encoder: Encoder[D]
-    , decoder: Decoder[D]
   ): EncoderShape.Aux[RepColumnContent[R, D], D, (String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)]), List[
       (String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)])
   ], Unit] = {
