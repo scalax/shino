@@ -4,7 +4,7 @@ import java.util.Locale
 
 import com.github.javafaker.Faker
 import net.scalax.asuna.core.common.Placeholder
-import net.scalax.shino.umr.{ColumnHelper, SlickMapper}
+import net.scalax.shino.umr.{ColumnHelper, SlickResultIO}
 import slick.jdbc.H2Profile.api._
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
@@ -17,7 +17,7 @@ class Test06 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
   case class Friend(id: Long, name: String, nick: String, age: Int)
 
-  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickMapper with ColumnHelper {
+  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO with ColumnHelper {
 
     def id   = column[Long]("id", O.AutoInc)
     def name = Placeholder.value[String]

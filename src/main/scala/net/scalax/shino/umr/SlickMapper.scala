@@ -1,41 +1,106 @@
 package net.scalax.shino.umr
 
-import net.scalax.asuna.core.decoder.SplitData
+import net.scalax.asuna.core.decoder.{DecoderShape, SplitData}
+import net.scalax.asuna.core.encoder.EncoderShape
 import net.scalax.asuna.core.formatter.FormatterShape
+import net.scalax.asuna.mapper.decoder.{DecoderContent, DecoderWrapperHelper}
+import net.scalax.asuna.mapper.encoder.{EncoderContent, EncoderWrapperHelper}
 import net.scalax.asuna.mapper.formatter.{FormatterContent, FormatterWrapperHelper}
 import slick.lifted.{FlatShapeLevel, MappedProjection, Shape, ShapedValue}
 
 import scala.reflect.ClassTag
 
-trait UmrWrapper[RepOut, DataType] extends FormatterContent[RepOut, DataType] {
+trait ShinoWrapper[RepOut, DataType] extends FormatterContent[RepOut, DataType] {
   def shape(implicit classTag: ClassTag[DataType]): MappedProjection[DataType, Any]
 }
 
-trait SlickMapper {
+trait ShinoDecoderWrapper[RepOut, DataType] extends DecoderContent[RepOut, DataType] {
+  def shape(implicit classTag: ClassTag[DataType]): MappedProjection[DataType, Any]
+}
 
-  val unitInstance = new SlickShapeValueWrap[(Unit, Unit)] {
+trait ShinoEncoderWrapper[RepOut, DataType] extends EncoderContent[RepOut, DataType] {
+  def shape(implicit classTag: ClassTag[DataType]): MappedProjection[DataType, Any]
+}
+
+trait SlickResultIO {
+
+  private val unitInstance = new SlickShapeValueWrap[(Unit, Unit)] {
     override type Rep   = (Unit, Unit)
     override type Level = FlatShapeLevel
     override val rep   = ((), ())
     override val shape = Shape.tuple2Shape[FlatShapeLevel, Unit, Unit, Unit, Unit, Unit, Unit](Shape.unitShape[FlatShapeLevel], Shape.unitShape[FlatShapeLevel])
   }.asInstanceOf[SlickShapeValueWrap[(Any, Any)]]
 
-  object shino extends FormatterWrapperHelper[SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any), UmrWrapper] {
+  object shino extends FormatterWrapperHelper[SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any), ShinoWrapper] {
     override def effect[Rep, D, Out](
         rep: Rep
-    )(implicit shape: FormatterShape.Aux[Rep, D, Out, SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)]): UmrWrapper[Out, D] = {
+    )(implicit shape: FormatterShape.Aux[Rep, D, Out, SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)]): ShinoWrapper[Out, D] = {
       val shape1  = shape
       val wrapCol = shape1.wrapRep(rep)
       val reps = shape1.toLawRep(
           wrapCol
         , unitInstance
       )
-      new UmrWrapper[Out, D] {
+      new ShinoWrapper[Out, D] {
         override def shape(implicit classTag: ClassTag[D]): MappedProjection[D, Any] = {
           ShapedValue(reps.rep, reps.shape)
             .<>(
                 { (t: (Any, Any)) =>
                 shape1.takeData(wrapCol, t).current
+              }
+              , { r: D =>
+                Option(shape1.buildData(r, wrapCol, ((), ())))
+              }
+            )
+            .asInstanceOf[MappedProjection[D, Any]]
+        }
+      }
+    }
+  }
+
+  object shinoOutput extends DecoderWrapperHelper[SlickShapeValueWrap[(Any, Any)], (Any, Any), ShinoDecoderWrapper] {
+    override def effect[Rep, D, Out](
+        rep: Rep
+    )(implicit shape: DecoderShape.Aux[Rep, D, Out, SlickShapeValueWrap[(Any, Any)], (Any, Any)]): ShinoDecoderWrapper[Out, D] = {
+      val shape1  = shape
+      val wrapCol = shape1.wrapRep(rep)
+      val reps = shape1.toLawRep(
+          wrapCol
+        , unitInstance
+      )
+      new ShinoDecoderWrapper[Out, D] {
+        override def shape(implicit classTag: ClassTag[D]): MappedProjection[D, Any] = {
+          ShapedValue(reps.rep, reps.shape)
+            .<>(
+                { (t: (Any, Any)) =>
+                shape1.takeData(wrapCol, t).current
+              }
+              , { r: D =>
+                Option.empty
+              }
+            )
+            .asInstanceOf[MappedProjection[D, Any]]
+        }
+      }
+    }
+  }
+
+  object shinoInput extends EncoderWrapperHelper[SlickShapeValueWrap[(Any, Any)], (Any, Any), ShinoEncoderWrapper] {
+    override def effect[Rep, D, Out](
+        rep: Rep
+    )(implicit shape: EncoderShape.Aux[Rep, D, Out, SlickShapeValueWrap[(Any, Any)], (Any, Any)]): ShinoEncoderWrapper[Out, D] = {
+      val shape1  = shape
+      val wrapCol = shape1.wrapRep(rep)
+      val reps = shape1.toLawRep(
+          wrapCol
+        , unitInstance
+      )
+      new ShinoEncoderWrapper[Out, D] {
+        override def shape(implicit classTag: ClassTag[D]): MappedProjection[D, Any] = {
+          ShapedValue(reps.rep, reps.shape)
+            .<>[D](
+                { (t: (Any, Any)) =>
+                throw new NoSuchElementException("Write only shape can not read data from database")
               }
               , { r: D =>
                 Option(shape1.buildData(r, wrapCol, ((), ())))
@@ -85,3 +150,5 @@ trait SlickMapper {
   }
 
 }
+
+object SlickResultIO extends SlickResultIO

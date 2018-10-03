@@ -5,7 +5,7 @@ import java.util.Locale
 import com.github.javafaker.Faker
 import net.scalax.asuna.mapper.common.ShapeHelper
 import net.scalax.shino.sortby.{NullsOrdering, OrderingWrap, SortBy}
-import net.scalax.shino.umr.{AutoSortByHelper, SlickMapper, SortByContent, SortByMapper}
+import net.scalax.shino.umr.{AutoSortByHelper, SlickResultIO, SortByContent, SortByMapper}
 import slick.jdbc.H2Profile.api._
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
@@ -27,7 +27,7 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     val value: FriendSort = apply()
   }
 
-  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickMapper with SortByMapper with AutoSortByHelper with ShapeHelper {
+  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO with SortByMapper with AutoSortByHelper with ShapeHelper {
     def id   = column[Long]("id", O.AutoInc)
     def name = column[String]("name")
     def nick = column[String]("nick")

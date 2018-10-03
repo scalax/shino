@@ -3,7 +3,7 @@ package net.scalax.shino.test
 import java.util.Locale
 
 import com.github.javafaker.Faker
-import net.scalax.shino.umr.SlickMapper
+import net.scalax.shino.umr.SlickResultIO
 import slick.jdbc.H2Profile.api._
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
@@ -15,7 +15,7 @@ class Test04 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
   case class Friend(id: Long, name: String, nick: String, age: Int)
 
-  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickMapper {
+  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
     def id   = column[Long]("id", O.AutoInc)
     def name = shino.shaped(column[String]("name")).fmap(s => "user name:" + s)(t => t)
     def nick = column[String]("nick")

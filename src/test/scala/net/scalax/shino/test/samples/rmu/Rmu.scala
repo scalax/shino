@@ -1,57 +1,40 @@
 package net.scalax.shino.test
 
 import io.circe.{Decoder, Encoder, Json, JsonObject}
+import net.scalax.asuna.core.decoder.DecoderShapeValue
 import net.scalax.asuna.core.encoder.EncoderShape
-import net.scalax.asuna.core.formatter.FormatterShapeValue
 import net.scalax.asuna.mapper.common.RepColumnContent
 import net.scalax.asuna.mapper.encoder.{EncoderContent, EncoderWrapperHelper}
-import net.scalax.shino.umr.{SlickMapper, SlickShapeValueWrap}
-import slick.lifted.{FlatShapeLevel, MappedProjection, Shape}
+import net.scalax.shino.umr.{SlickResultIO, SlickShapeValueWrap}
+import slick.lifted.{FlatShapeLevel, Shape}
 
 trait RmuWrapper[RepOut, DataType] extends EncoderContent[RepOut, DataType] {
-  def shape: FormatterShapeValue[JsonObject, SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)]
+  self =>
+  import SlickResultIO._
+
+  def repCol: List[(String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)])]
+  lazy val shape: DecoderShapeValue[JsonObject, SlickShapeValueWrap[(Any, Any)], (Any, Any)] =
+    shinoOutput.shaped(repCol.map(s => s._2.dmap(r => (s._1, r)))).dmap(JsonObject.fromIterable)
+  def filter(s: String => Boolean): RmuWrapper[RepOut, DataType] = new RmuWrapper[RepOut, DataType] {
+    override val repCol = self.repCol.filter(r => s(r._1))
+  }
 }
 
 trait RmuHelper {
 
-  private object slickMapper extends SlickMapper
+  import SlickResultIO._
 
-  import slickMapper._
-
-  object rmu extends EncoderWrapperHelper[FormatterShapeValue[Map[String, Json], SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)], Unit, RmuWrapper] {
+  object rmu extends EncoderWrapperHelper[List[(String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)])], Unit, RmuWrapper] {
     override def effect[Rep, D, Out](
         rep: Rep
     )(
-        implicit shape: EncoderShape.Aux[Rep, D, Out, FormatterShapeValue[Map[String, Json], SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)], Unit]
+        implicit shape: EncoderShape.Aux[Rep, D, Out, List[(String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)])], Unit]
     ): RmuWrapper[Out, D] = {
       val shape1  = shape
       val wrapCol = shape1.wrapRep(rep)
-      val reps = shape1
-        .toLawRep(
-            wrapCol
-          , shino
-            .shaped(new SlickShapeValueWrap[(Unit, Unit)] {
-              override type Rep   = (Unit, Unit)
-              override type Level = FlatShapeLevel
-              override val rep = ((), ())
-              override val shape =
-                Shape.tuple2Shape[FlatShapeLevel, Unit, Unit, Unit, Unit, Unit, Unit](Shape.unitShape[FlatShapeLevel], Shape.unitShape[FlatShapeLevel])
-            })
-            .fmap { _: (Unit, Unit) =>
-              Map.empty[String, Json]
-            } { _ =>
-              ((), ())
-            }
-        )
-        .fmap { m: Map[String, Json] =>
-          JsonObject.fromMap(m)
-        } { obj: JsonObject =>
-          obj.toMap
-        }
+      val reps    = shape1.toLawRep(wrapCol, List.empty)
       new RmuWrapper[Out, D] {
-        override def shape: FormatterShapeValue[JsonObject, SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)] = {
-          reps
-        }
+        override val repCol = reps
       }
     }
   }
@@ -60,48 +43,31 @@ trait RmuHelper {
       implicit shape: Shape[L, R, D, T]
     , encoder: Encoder[D]
     , decoder: Decoder[D]
-  ): EncoderShape.Aux[RepColumnContent[R, D], D, (String, FormatterShapeValue[(String, Json), SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)]), FormatterShapeValue[
-      Map[String, Json]
-    , SlickShapeValueWrap[(Any, Any)]
-    , (Any, Any)
-    , (Any, Any)
+  ): EncoderShape.Aux[RepColumnContent[R, D], D, (String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)]), List[
+      (String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)])
   ], Unit] = {
 
-    new EncoderShape[RepColumnContent[R, D], FormatterShapeValue[
-        Map[String, Json]
-      , SlickShapeValueWrap[(Any, Any)]
-      , (Any, Any)
-      , (Any, Any)
-    ], Unit] {
+    new EncoderShape[RepColumnContent[R, D], List[(String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)])], Unit] {
 
-      override type Target = (String, FormatterShapeValue[(String, Json), SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)])
+      override type Target = (String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)])
       override type Data   = D
 
       override def wrapRep(
           base: RepColumnContent[R, D]
-      ): (String, FormatterShapeValue[(String, Json), SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)]) = {
-        (base.columnInfo.modelColumnName, shino.shaped(base.rep).fmap(d => (base.columnInfo.modelColumnName, encoder(d))) { r =>
-          r._2.as(decoder).right.get
-        })
+      ): (String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)]) = {
+        (base.columnInfo.modelColumnName, shinoOutput.shaped(base.rep).dmap(d => encoder(d)))
       }
 
       override def toLawRep(
-          base: (String, FormatterShapeValue[(String, Json), SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)])
-        , oldRep: FormatterShapeValue[Map[String, Json], SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)]
-      ): FormatterShapeValue[Map[String, Json], SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)] = {
-        base._2
-          .fzip(oldRep)
-          .fmap {
-            case (baseData, oldData) =>
-              oldData + baseData
-          } { map =>
-            ((base._1, map.get(base._1).get), map)
-          }
+          base: (String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)])
+        , oldRep: List[(String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)])]
+      ): List[(String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)])] = {
+        base :: oldRep
       }
 
       override def buildData(
           data: D
-        , rep: (String, FormatterShapeValue[(String, Json), SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)])
+        , rep: (String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)])
         , oldData: Unit
       ): Unit = ()
 
