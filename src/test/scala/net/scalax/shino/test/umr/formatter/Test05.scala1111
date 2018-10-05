@@ -1,37 +1,36 @@
-package net.scalax.shino.test
+package net.scalax.shino.test.umr.formatter
 
 import java.util.Locale
 
 import com.github.javafaker.Faker
-import net.scalax.asuna.core.common.Placeholder
-import net.scalax.shino.umr.{ColumnHelper, SlickResultIO}
+import net.scalax.asuna.mapper.common.annotations.RootModel
+import net.scalax.shino.umr.SlickResultIO
 import slick.jdbc.H2Profile.api._
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import org.slf4j.LoggerFactory
-import slick.ast.TypedType
 
 import scala.concurrent.{duration, Await, Future}
 
-class Test06 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
+class Test05 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
 
   case class Friend(id: Long, name: String, nick: String, age: Int)
+  case class NameAndAge(name: String, age: Int)
 
-  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO with ColumnHelper {
+  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
+    def id       = column[Long]("id", O.AutoInc)
+    def name_ext = column[String]("name")
+    def nick     = column[String]("nick")
+    def age_ext  = column[Int]("age")
 
-    def id   = column[Long]("id", O.AutoInc)
-    def name = Placeholder.value[String]
+    @RootModel[NameAndAge]
+    def name_age =
+      shino
+        .shaped(name_ext)
+        .fzip(shino.shaped(age_ext))
+        .fmap { case (name, age) => NameAndAge("user name:" + name + ", age:" + age, age) }(t => (t.name, t.age))
 
     override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
-
-    override def columnGenerator[D](name: String, typedType: TypedType[D]): Rep[D] = {
-      val newName = name match {
-        case "age" => "age_ext"
-        case r     => r
-      }
-      column(newName)(typedType)
-    }
-
   }
 
   val friendTq = TableQuery[FriendTable]
@@ -43,7 +42,7 @@ class Test06 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  val db = Database.forURL(s"jdbc:h2:mem:test06;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
+  val db = Database.forURL(s"jdbc:h2:mem:test05;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
 
   override def beforeAll = {
     await(db.run(friendTq.schema.create))
@@ -73,7 +72,7 @@ class Test06 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     insertIds.map { s =>
       (s > 0) should be(true)
     }
-    result.toList.map(s => s.copy(id = -1)) should be(List(friend1, friend2, friend3))
+    result.toList.map(s => s.copy(id = -1)) should be(List(friend1, friend2, friend3).map(s => s.copy(name = "user name:" + s.name + ", age:" + s.age)))
   }
 
 }

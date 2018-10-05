@@ -1,9 +1,8 @@
-package net.scalax.shino.test
+package net.scalax.shino.test.umr.writer
 
 import java.util.Locale
 
 import com.github.javafaker.Faker
-import net.scalax.asuna.mapper.common.annotations.RootModel
 import net.scalax.shino.umr.SlickResultIO
 import slick.jdbc.H2Profile.api._
 import org.scalatest._
@@ -12,25 +11,30 @@ import org.slf4j.LoggerFactory
 
 import scala.concurrent.{duration, Await, Future}
 
-class Test05 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
+class Test02 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
 
   case class Friend(id: Long, name: String, nick: String, age: Int)
-  case class NameAndAge(name: String, age: Int)
+  case class FriendSetter(name: String, nick: String)
 
   class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
-    def id       = column[Long]("id", O.AutoInc)
-    def name_ext = column[String]("name")
-    def nick     = column[String]("nick")
-    def age_ext  = column[Int]("age")
-
-    @RootModel[NameAndAge]
-    def name_age =
-      shino
-        .shaped(name_ext)
-        .fzip(shino.shaped(age_ext))
-        .fmap { case (name, age) => NameAndAge("user name:" + name + ", age:" + age, age) }(t => (t.name, t.age))
+    def id   = column[Long]("id", O.AutoInc)
+    def name = column[String]("name")
+    def nick = column[String]("nick")
+    def age  = column[Int]("age")
 
     override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
+  }
+
+  class FriendTableToInsert(ft: FriendTable) extends SlickResultIO {
+    def id = ft.id
+    def set(name: String, age: Int) = {
+      val setter1 = shinoInput.set(ft.name).to(name)
+      val s = if (age > 300) {
+        val setter2 = shinoInput.set(ft.age).to(age)
+        shinoInput.effect(shinoInput.sequenceShapeValue(setter1, setter2))
+      } else shinoInput.effect(setter1)
+      s.shape
+    }
   }
 
   val friendTq = TableQuery[FriendTable]
@@ -42,7 +46,7 @@ class Test05 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  val db = Database.forURL(s"jdbc:h2:mem:test05;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
+  val db = Database.forURL(s"jdbc:h2:mem:writer_test02;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
 
   override def beforeAll = {
     await(db.run(friendTq.schema.create))
@@ -66,13 +70,22 @@ class Test05 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     val friend3DBIO = insert += friend3
 
     val insertIds = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
-    val result    = await(db.run(friendTq.result))
+    case class NameWithAge(name: String, age: Int)
+    val nameWithAge = List(NameWithAge("a1", 234), NameWithAge("a2", 322), NameWithAge("a3", 477))
+
+    val actions =
+      insertIds.zip(nameWithAge).map { case (id, na) => friendTq.filter(_.id === id).map(s => new FriendTableToInsert(s).set(na.name, na.age)).update(()) }
+    val updateAction = await(db.run(DBIO.sequence(actions)))
+
+    val result = await(db.run(friendTq.sortBy(_.id).result))
 
     insertIds.size should be(3)
     insertIds.map { s =>
       (s > 0) should be(true)
     }
-    result.toList.map(s => s.copy(id = -1)) should be(List(friend1, friend2, friend3).map(s => s.copy(name = "user name:" + s.name + ", age:" + s.age)))
+    result.toList.map(s => s.copy(id = -1)) should be(
+        List(friend1.copy(name = "a1"), friend2.copy(name = "a2", age = 322), friend3.copy(name = "a3", age = 477))
+    )
   }
 
 }

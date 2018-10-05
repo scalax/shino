@@ -1,8 +1,9 @@
-package net.scalax.shino.test
+package net.scalax.shino.test.umr.formatter
 
 import java.util.Locale
 
 import com.github.javafaker.Faker
+import net.scalax.asuna.mapper.common.annotations.OverrideProperty
 import net.scalax.shino.umr.SlickResultIO
 import slick.jdbc.H2Profile.api._
 import org.scalatest._
@@ -11,15 +12,18 @@ import org.slf4j.LoggerFactory
 
 import scala.concurrent.{duration, Await, Future}
 
-class Test04 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
+class Test02 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
 
-  case class Friend(id: Long, name: String, nick: String, age: Int)
+  case class Friend(id: Option[Long], name: String, nick: String, age: Int)
 
   class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
     def id   = column[Long]("id", O.AutoInc)
-    def name = shino.shaped(column[String]("name")).fmap(s => "user name:" + s)(t => t)
+    def name = column[String]("name")
     def nick = column[String]("nick")
     def age  = column[Int]("age")
+
+    @OverrideProperty("id")
+    def id_? = id.?
 
     override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
   }
@@ -33,15 +37,15 @@ class Test04 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  val db = Database.forURL(s"jdbc:h2:mem:test04;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
+  val db = Database.forURL(s"jdbc:h2:mem:test02;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
 
   override def beforeAll = {
     await(db.run(friendTq.schema.create))
   }
 
-  val friend1 = Friend(-1, faker.name.name, faker.weather.description, 23)
-  val friend2 = Friend(-1, faker.name.name, faker.weather.description, 26)
-  val friend3 = Friend(-1, faker.name.name, faker.weather.description, 20)
+  val friend1 = Friend(Option.empty, faker.name.name, faker.weather.description, 23)
+  val friend2 = Friend(Option.empty, faker.name.name, faker.weather.description, 26)
+  val friend3 = Friend(Option.empty, faker.name.name, faker.weather.description, 20)
 
   before {}
 
@@ -63,7 +67,7 @@ class Test04 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     insertIds.map { s =>
       (s > 0) should be(true)
     }
-    result.toList.map(s => s.copy(id = -1)) should be(List(friend1, friend2, friend3).map(s => s.copy(name = "user name:" + s.name)))
+    result.toList.map(s => s.copy(id = Option.empty)) should be(List(friend1, friend2, friend3))
   }
 
 }

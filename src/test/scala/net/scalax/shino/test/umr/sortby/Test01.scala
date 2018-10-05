@@ -1,4 +1,4 @@
-package net.scalax.shino.test
+package net.scalax.shino.test.umr.sortby
 
 import java.util.Locale
 
@@ -43,24 +43,7 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     override def sortByColumnGenerator[D](name: String, typedType: TypedType[D]): Rep[D] = column(name)(typedType)
   }
 
-  class FriendTableToInsert(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO with SortByMapper with ShapeHelper {
-    def id   = column[Long]("id", O.AutoInc)
-    def name = column[String]("name")
-    def nick = column[String]("nick")
-    def age  = column[Int]("age")
-
-    override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
-
-    def setter =
-      shinoInput
-        .effect(
-            shinoInput.sequenceShapeValue(shinoInput.set(name).to("agrtrvfdf" * 10), shinoInput.set(nick).to("w343sdfsdfe" * 10), shinoInput.set(age).to(1561))
-        )
-        .shape
-  }
-
-  val friendTq         = TableQuery[FriendTable]
-  val friendTqToInsert = TableQuery[FriendTableToInsert]
+  val friendTq = TableQuery[FriendTable]
 
   val local = new Locale("zh", "CN")
   val faker = new Faker(local)
@@ -69,7 +52,7 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  val db = Database.forURL(s"jdbc:h2:mem:test01;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
+  val db = Database.forURL(s"jdbc:h2:mem:sortby_test01;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
 
   override def beforeAll = {
     await(db.run(friendTq.schema.create))
@@ -92,8 +75,7 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     val friend2DBIO = insert += friend2
     val friend3DBIO = insert += friend3
 
-    val insertIds    = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
-    val updateAction = await(db.run(friendTqToInsert.filter(_.id === 1L).map(_.setter).update(())))
+    val insertIds = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
 
     val result = await(db.run(friendTq.sortBy { s =>
       val i = s.orderDef

@@ -51,7 +51,7 @@ trait SlickResultIO {
               , { r: D =>
                 Option(shape1.buildData(r, wrapCol, ((), ())))
               }
-            )
+            )(classTag)
             .asInstanceOf[MappedProjection[D, Any]]
         }
       }
