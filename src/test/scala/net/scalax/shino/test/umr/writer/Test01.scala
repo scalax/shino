@@ -76,7 +76,7 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
       (s > 0) should be(true)
     }
     result.toList.map(s => s.copy(id = -1)) should be(
-      List(friend1.copy(name = "namenamename", nick = "miaomiaomiao"), friend2, friend3.copy(name = "namenamename", nick = "miaomiaomiao"))
+        List(friend1.copy(name = "namenamename", nick = "miaomiaomiao"), friend2, friend3.copy(name = "namenamename", nick = "miaomiaomiao"))
     )
   }
 
