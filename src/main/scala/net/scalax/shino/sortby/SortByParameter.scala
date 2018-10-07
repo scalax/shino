@@ -156,6 +156,15 @@ trait SortBy {
     }
   }
 
+  def slientMutiplySort(s: Either[SortByErrorContent, SOrdered]*): SOrdered = {
+    s.foldLeft(new SOrdered(IndexedSeq.empty)) { (orderEi, item) =>
+      (orderEi, item) match {
+        case (i1, Left(_))   => i1
+        case (i1, Right(i2)) => new SOrdered(i1.columns ++ i2.columns)
+      }
+    }
+  }
+
 }
 
 object SortBy extends SortBy

@@ -1,46 +1,51 @@
-package net.scalax.shino.test.umr.sortby
+package net.scalax.shino.test.sortby
 
 import java.util.Locale
 
 import com.github.javafaker.Faker
 import net.scalax.asuna.mapper.common.ShapeHelper
-import net.scalax.shino.sortby.{NullsOrdering, OrderingWrap, SortBy}
-import net.scalax.shino.umr.{AutoSortByHelper, SlickResultIO, SortByContent, SortByMapper}
+import net.scalax.asuna.mapper.common.annotations.RootTable
+import net.scalax.shino.sortby.{NullsOrdering, SortBy}
+import net.scalax.shino.umr.{SlickResultIO, SortByContent, SortByMapper}
 import slick.jdbc.H2Profile.api._
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import org.slf4j.LoggerFactory
-import slick.ast.TypedType
 
 import scala.concurrent.{duration, Await, Future}
 
-class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
+class Test02 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
 
   case class Friend(id: Long, name: String, nick: String, age: Int)
   case class FriendSort(
-      id: NullsOrdering = SortBy.default
-    , name: NullsOrdering = SortBy.default
-    , aa: NullsOrdering = SortBy.default
-    , hahahaha: OrderingWrap[String] = SortBy.default.tagged[String]
+      nick: NullsOrdering = SortBy.default
   )
   object FriendSort {
     val value: FriendSort = apply()
   }
 
-  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO with SortByMapper with AutoSortByHelper with ShapeHelper {
+  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO with SortByMapper with ShapeHelper {
+    self =>
+
     def id   = column[Long]("id", O.AutoInc)
     def name = column[String]("name")
     def nick = column[String]("nick")
     def age  = column[Int]("age")
-    def aa1  = shino.shaped(name ++ nick)
-    def aa2  = sortby.shaped(SortByContent("aabbccdd", column[String]("fhrthrthffg")))
-    def aa   = aa1.mixin(aa2)
 
     override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
 
-    def orderDef = sortby.effect(sortby.singleModel[FriendSort](this).compile).inputData(FriendSort.value)
+    def orderDef = sortby.effect(sortby.singleModel[FriendSort](new FriendTableToSortBy { override val ft = self }).compile).inputData(FriendSort.value)
 
-    override def sortByColumnGenerator[D](name: String, typedType: TypedType[D]): Rep[D] = column(name)(typedType)
+  }
+
+  trait FriendTableToSortBy extends SortByMapper {
+    self =>
+
+    @RootTable val ft: FriendTable
+
+    def nick = sortby.shaped(SortByContent("nick", ft.nick)).ezip(sortby.shaped(SortByContent("name", ft.name))).emap[NullsOrdering] { s =>
+      (s, s)
+    }
   }
 
   val friendTq = TableQuery[FriendTable]
@@ -52,7 +57,7 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  val db = Database.forURL(s"jdbc:h2:mem:sortby_test01;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
+  val db = Database.forURL(s"jdbc:h2:mem:sortby_test02;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
 
   override def beforeAll = {
     await(db.run(friendTq.schema.create))
@@ -78,9 +83,8 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     val insertIds = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
 
     val result = await(db.run(friendTq.sortBy { s =>
-      val i = s.orderDef
-      val sOpt =
-        SortBy.strictMutiplySort(i.strictSort("id", SortBy.ASC, SortBy.NULLS_LAST))
+      val i    = s.orderDef
+      val sOpt = SortBy.strictMutiplySort(i.strictSort("name", SortBy.DESC, SortBy.NULLS_LAST))
       sOpt match {
         case Right(s) => s
         case Left(e)  => throw new IllegalArgumentException(e.toString)
@@ -91,7 +95,7 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     insertIds.map { s =>
       (s > 0) should be(true)
     }
-    result.toList.map(s => s.copy(id = -1)) should be(List(friend1, friend2, friend3))
+    result.toList.map(s => s.copy(id = -1)) should be(List(friend1, friend2, friend3).sortBy(_.name).reverse)
   }
 
 }
