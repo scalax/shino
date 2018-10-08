@@ -16,17 +16,17 @@ class Test02 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
   case class Friend(id: Option[Long], name: String, nick: String, age: Int)
 
-  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
-    def id   = column[Long]("id", O.AutoInc)
-    def name = column[String]("name")
-    def nick = column[String]("nick")
-    def age  = column[Int]("age")
+class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
+  def id   = column[Long]("id", O.AutoInc)
+  def name = column[String]("name")
+  def nick = column[String]("nick")
+  def age  = column[Int]("age")
 
-    @OverrideProperty("id")
-    def id_? = id.?
+  @OverrideProperty("id")
+  def id_? = id.?
 
-    override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
-  }
+  override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
+}
 
   val friendTq = TableQuery[FriendTable]
 

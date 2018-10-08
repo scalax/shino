@@ -16,20 +16,20 @@ class Test03 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
   case class Friend(id: Long, name: String, nick: String, age: Int)
 
-  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
-    def id   = column[Long]("id", O.AutoInc)
-    def name = column[String]("name")
-    def nick = column[String]("nick")
-    def age  = column[Int]("age")
+class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
+  def id   = column[Long]("id", O.AutoInc)
+  def name = column[String]("name")
+  def nick = column[String]("nick")
+  def age  = column[Int]("age")
 
-    override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
-  }
+  override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
+}
 
-  class FriendTableToOutput(tag: slick.lifted.Tag) extends FriendTable(tag) with SlickResultIO {
-    @OverrideProperty(name = "age")
-    def ageExt = shinoOutput.shaped(age).dmap(s => s + 1234)
-    val getter = shinoOutput.effect(shinoOutput.singleModel[Friend](this).compile).shape
-  }
+class FriendTableToOutput(tag: slick.lifted.Tag) extends FriendTable(tag) with SlickResultIO {
+  @OverrideProperty(name = "age")
+  def ageExt = shinoOutput.shaped(age).dmap(s => s + 1234)
+  val getter = shinoOutput.effect(shinoOutput.singleModel[Friend](this).compile).shape
+}
 
   val friendTq       = TableQuery[FriendTable]
   val friendTqOutput = TableQuery[FriendTableToOutput]
