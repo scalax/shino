@@ -23,3 +23,4 @@ Documentation
 [slick reader](./README_reader.md)  
 [slick writer](./README_writer.md)  
 [slick sortBy](./README_sortby.md)  
+[slick dynamic](./README_dynamic.md)  
