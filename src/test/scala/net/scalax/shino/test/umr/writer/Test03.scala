@@ -14,25 +14,25 @@ import scala.concurrent.{duration, Await, Future}
 
 class Test03 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
 
-case class Friend(id: Long, name: String, nick: String, age: Int)
+  case class Friend(id: Long, name: String, nick: String, age: Int)
 
-class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
-  def id   = column[Long]("id", O.AutoInc)
-  def name = column[String]("name")
-  def nick = column[String]("nick")
-  def age  = column[Int]("age")
+  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
+    def id   = column[Long]("id", O.AutoInc)
+    def name = column[String]("name")
+    def nick = column[String]("nick")
+    def age  = column[Int]("age")
 
-  override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
-}
+    override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
+  }
 
-class FriendTableToInsert(tag: slick.lifted.Tag) extends FriendTable(tag) with SlickResultIO {
-  @OverrideProperty(name = "age")
-  def ageExt = shinoInput.shaped(column[Int]("age")).emap[Int](s => s + 1234)
-  val setter = shinoInput.effect(shinoInput.singleModel[Friend](this).compile).shape
-}
+  class FriendTableToInsert(tag: slick.lifted.Tag) extends FriendTable(tag) with SlickResultIO {
+    @OverrideProperty(name = "age")
+    def ageExt = shinoInput.shaped(column[Int]("age")).emap[Int](s => s + 1234)
+    val setter = shinoInput.effect(shinoInput.singleModel[Friend](this).compile).shape
+  }
 
-val friendTq         = TableQuery[FriendTable]
-val friendTqToInsert = TableQuery[FriendTableToInsert]
+  val friendTq         = TableQuery[FriendTable]
+  val friendTqToInsert = TableQuery[FriendTableToInsert]
 
   val local = new Locale("zh", "CN")
   val faker = new Faker(local)

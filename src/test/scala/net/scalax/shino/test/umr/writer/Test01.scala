@@ -13,21 +13,21 @@ import scala.concurrent.{duration, Await, Future}
 
 class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
 
-case class Friend(id: Long, name: String, nick: String, age: Int)
-case class FriendSetter(name: String, nick: String)
+  case class Friend(id: Long, name: String, nick: String, age: Int)
+  case class FriendSetter(name: String, nick: String)
 
-class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
-  def id   = column[Long]("id", O.AutoInc)
-  def name = column[String]("name")
-  def nick = column[String]("nick")
-  def age  = column[Int]("age")
+  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
+    def id   = column[Long]("id", O.AutoInc)
+    def name = column[String]("name")
+    def nick = column[String]("nick")
+    def age  = column[Int]("age")
 
-  override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
+    override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
 
-  def setter = shino.effect(shino.singleModel[FriendSetter](this).compile).shape
-}
+    def setter = shino.effect(shino.singleModel[FriendSetter](this).compile).shape
+  }
 
-val friendTq = TableQuery[FriendTable]
+  val friendTq = TableQuery[FriendTable]
 
   val local = new Locale("zh", "CN")
   val faker = new Faker(local)
