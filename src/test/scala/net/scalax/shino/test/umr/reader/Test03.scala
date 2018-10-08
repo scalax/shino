@@ -31,8 +31,8 @@ class FriendTableToOutput(tag: slick.lifted.Tag) extends FriendTable(tag) with S
   val getter = shinoOutput.effect(shinoOutput.singleModel[Friend](this).compile).shape
 }
 
-  val friendTq       = TableQuery[FriendTable]
-  val friendTqOutput = TableQuery[FriendTableToOutput]
+val friendTq       = TableQuery[FriendTable]
+val friendTqOutput = TableQuery[FriendTableToOutput]
 
   val local = new Locale("zh", "CN")
   val faker = new Faker(local)

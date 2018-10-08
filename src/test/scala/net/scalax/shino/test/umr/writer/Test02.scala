@@ -13,31 +13,31 @@ import scala.concurrent.{duration, Await, Future}
 
 class Test02 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
 
-  case class Friend(id: Long, name: String, nick: String, age: Int)
-  case class FriendSetter(name: String, nick: String)
+case class Friend(id: Long, name: String, nick: String, age: Int)
+case class FriendSetter(name: String, nick: String)
 
-  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
-    def id   = column[Long]("id", O.AutoInc)
-    def name = column[String]("name")
-    def nick = column[String]("nick")
-    def age  = column[Int]("age")
+class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
+  def id   = column[Long]("id", O.AutoInc)
+  def name = column[String]("name")
+  def nick = column[String]("nick")
+  def age  = column[Int]("age")
 
-    override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
+  override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
+}
+
+class FriendTableToInsert(ft: FriendTable) extends SlickResultIO {
+  def id = ft.id
+  def set(name: String, age: Int) = {
+    val setter1 = shinoInput.set(ft.name).to(name)
+    val s = if (age > 300) {
+      val setter2 = shinoInput.set(ft.age).to(age)
+      shinoInput.effect(shinoInput.sequenceShapeValue(setter1, setter2))
+    } else shinoInput.effect(setter1)
+    s.shape
   }
+}
 
-  class FriendTableToInsert(ft: FriendTable) extends SlickResultIO {
-    def id = ft.id
-    def set(name: String, age: Int) = {
-      val setter1 = shinoInput.set(ft.name).to(name)
-      val s = if (age > 300) {
-        val setter2 = shinoInput.set(ft.age).to(age)
-        shinoInput.effect(shinoInput.sequenceShapeValue(setter1, setter2))
-      } else shinoInput.effect(setter1)
-      s.shape
-    }
-  }
-
-  val friendTq = TableQuery[FriendTable]
+val friendTq = TableQuery[FriendTable]
 
   val local = new Locale("zh", "CN")
   val faker = new Faker(local)

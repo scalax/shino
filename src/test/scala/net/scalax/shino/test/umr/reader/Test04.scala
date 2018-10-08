@@ -15,25 +15,25 @@ import scala.concurrent.{duration, Await, Future}
 
 class Test04 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
 
-  case class Friend(id: Long, name: String, nick: String, age: Int)
-  case class NameAndAge(name: String, age: Int)
+case class Friend(id: Long, name: String, nick: String, age: Int)
+case class NameAndAge(name: String, age: Int)
 
-  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
-    def id   = column[Long]("id", O.AutoInc)
-    def name = column[String]("name")
-    def nick = column[String]("nick")
-    def age  = column[Int]("age")
+class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
+  def id   = column[Long]("id", O.AutoInc)
+  def name = column[String]("name")
+  def nick = column[String]("nick")
+  def age  = column[Int]("age")
 
-    override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
-  }
+  override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
+}
 
-  class FriendTableToInsert(@(RootTable @getter) val ft: FriendTable) extends SlickResultIO {
-    @RootModel[NameAndAge]
-    def nameAndAge = shinoOutput.shaped(ft.name).dzip(shinoOutput.shaped(ft.age)).dmap { case (name, age) => NameAndAge(s"${name}(law age: ${age})", age + 1) }
-    val getter     = shinoOutput.effect(shinoOutput.singleModel[Friend](this).compile).shape
-  }
+class FriendTableToInsert(@(RootTable @getter) val ft: FriendTable) extends SlickResultIO {
+  @RootModel[NameAndAge]
+  def nameAndAge = shinoOutput.shaped(ft.name).dzip(shinoOutput.shaped(ft.age)).dmap { case (name, age) => NameAndAge(s"${name}(law age: ${age})", age + 1) }
+  val getter     = shinoOutput.effect(shinoOutput.singleModel[Friend](this).compile).shape
+}
 
-  val friendTq = TableQuery[FriendTable]
+val friendTq = TableQuery[FriendTable]
 
   val local = new Locale("zh", "CN")
   val faker = new Faker(local)

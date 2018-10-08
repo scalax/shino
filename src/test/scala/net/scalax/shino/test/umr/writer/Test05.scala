@@ -15,28 +15,28 @@ import scala.concurrent.{duration, Await, Future}
 
 class Test05 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
 
-  case class Friend(id: Long, name: String, nick: String, age: Int)
+case class Friend(id: Long, name: String, nick: String, age: Int)
 
-  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO with ColumnHelper {
+class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO with ColumnHelper {
 
-    def id   = column[Long]("id", O.AutoInc)
-    def name = Placeholder.value[String]
+  def id   = column[Long]("id", O.AutoInc)
+  def name = Placeholder.value[String]
 
-    override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
+  override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
 
-    val setter = shinoInput.effect(shinoInput.singleModel[Friend](this).compile).shape
+  val setter = shinoInput.effect(shinoInput.singleModel[Friend](this).compile).shape
 
-    override def columnGenerator[D](name: String, typedType: TypedType[D]): Rep[D] = {
-      val newName = name match {
-        case "age" => "age_ext"
-        case r     => r
-      }
-      column(newName)(typedType)
+  override def columnGenerator[D](name: String, typedType: TypedType[D]): Rep[D] = {
+    val newName = name match {
+      case "age" => "age_ext"
+      case r     => r
     }
-
+    column(newName)(typedType)
   }
 
-  val friendTq = TableQuery[FriendTable]
+}
+
+val friendTq = TableQuery[FriendTable]
 
   val local = new Locale("zh", "CN")
   val faker = new Faker(local)

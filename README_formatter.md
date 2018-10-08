@@ -1,22 +1,4 @@
-# shino
-
-An auto mapper for scala [slick](https://github.com/slick/slick) base on [asuna](https://github.com/scalax/asuna). Type safe, type driven, no runtime reflection.
-
-How to get it
--------------
-
-Add dependency
-
-```scala
-resolvers += Resolver.bintrayRepo("djx314", "maven")
-libraryDependencies += "net.scalax" %% "shino" % "0.0.2-SNAP20180930.2"
-```
-
-Can I use it in production?
--------------
-Nope. Since the mapping rules in asuna is not stable.
-
-User guide
+Formatter user guide
 -------------
 
 - Case 1  
@@ -40,7 +22,7 @@ val friendTq = TableQuery[FriendTable]
 
 Shino will automatically correspond to the properties of FriendTable and Friend. Then generate a value to fix `def * =`.
 
-[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/formatter/Test01.scala)
+[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/umr/formatter/Test01.scala)
 &nbsp;  
 &nbsp;  
 
@@ -66,9 +48,9 @@ class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") wi
 val friendTq = TableQuery[FriendTable]
 ```
 
-In `@OverrideProperty("id")` you can only use literal string parameter.  
+Note: In `@OverrideProperty("id")` you can only use literal string parameter.  
 
-[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/formatter/Test02.scala)
+[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/umr/formatter/Test02.scala)
 &nbsp;  
 &nbsp;  
 
@@ -105,7 +87,7 @@ val friendTq = TableQuery[FriendTable]
 
 `RootTable` will promote all the properties of FriendTable to the root of FriendTableExt. But the properties defined in FriendTableExt will definitely override the properties defined in FriendTable.
 
-[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/formatter/Test03.scala)
+[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/umr/formatter/Test03.scala)
 &nbsp;  
 &nbsp;  
 
@@ -129,7 +111,7 @@ val friendTq = TableQuery[FriendTable]
 ```
 Shino can map column many times. No need to worry about this [issue](https://github.com/slick/slick/issues/1894).
 
-[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/formatter/Test04.scala)
+[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/umr/formatter/Test04.scala)
 &nbsp;  
 &nbsp;  
 
@@ -161,4 +143,4 @@ Note:
 - If you must override existing property(like `name` here). You can use `Placeholder.value[String]` to get the same behavior explicitly.
 - Column id still use `def id`. So if you want to map a specific column, just defining a same name property.
 
-[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/formatter/Test05.scala)
+[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/umr/formatter/Test05.scala)

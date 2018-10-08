@@ -1,22 +1,4 @@
-# shino
-
-An auto mapper for scala [slick](https://github.com/slick/slick) base on [asuna](https://github.com/scalax/asuna). Type safe, type driven, no runtime reflection.
-
-How to get it
--------------
-
-Add dependency
-
-```scala
-resolvers += Resolver.bintrayRepo("djx314", "maven")
-libraryDependencies += "net.scalax" %% "shino" % "0.0.2-SNAP20180930.2"
-```
-
-Can I use it in production?
--------------
-Nope. Since the mapping rules in asuna is not stable.
-
-User guide
+Reader user guide
 -------------
 
 - Case 1  
@@ -42,7 +24,7 @@ val friendTq = TableQuery[FriendTable]
 friendTq.sortBy(_.id).map(_.reader).result // DBIO[Seq[FriendReader]]
 ```
 
-shinoOutput will automatically correspond to the properties of FriendTable and FriendReader. Then generate a value with type `MappedProjection[FriendReader, Any]`.
+shinoOutput will automatically correspond to the properties of FriendTable and FriendReader. Then generate a read only `MappedProjection[FriendReader, Any]`.
 
 [Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/umr/reader/Test01.scala)
 &nbsp;  
@@ -50,94 +32,71 @@ shinoOutput will automatically correspond to the properties of FriendTable and F
 
 - Case 2  
 
-If you want to use `id.?` to map id column and donot want to change the original value. You can use the `OverrideProperty` annotation.
+You can use `OverrideProperty` annotation like formatter to prevent attribute name conflicts.
 
 ```scala
-case class Friend(id: Option[Long], name: String, nick: String, age: Int)
+case class Friend(id: Long, name: String, nick: String, age: Int)
+case class FriendGetter(name: String, nick: String, tableProvider: Int)
 
-class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickMapper {
+class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
   def id   = column[Long]("id", O.AutoInc)
   def name = column[String]("name")
   def nick = column[String]("nick")
   def age  = column[Int]("age")
 
-  @OverrideProperty("id")
-  def id_? = id.?
+  override def tableProvider = super.tableProvider // Already used.
+
+  @OverrideProperty(name = "tableProvider")
+  def nameLength = name.length
+
+  override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
+
+  def reader = shinoOutput.effect(shinoOutput.singleModel[FriendGetter](this).compile).shape
+
+}
+
+val friendTq = TableQuery[FriendTable]
+friendTq.map(_.reader).result // DBIO[Seq[FriendGetter]]
+```
+
+Note: In `@OverrideProperty("tableProvider")` you can only use literal string parameter.  
+
+[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/umr/reader/Test02.scala)
+&nbsp;  
+&nbsp;   
+
+- Case 3  
+
+You can use `shinoOutput.shaped` to lift your column. Then you can use method `dmap` and `dzip` to manipulate the columns.
+
+```scala
+class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
+  def id   = column[Long]("id", O.AutoInc)
+  def name = column[String]("name")
+  def nick = column[String]("nick")
+  def age  = column[Int]("age")
 
   override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
 }
 
-val friendTq = TableQuery[FriendTable]
-```
-
-In `@OverrideProperty("id")` you can only use literal string parameter.  
-
-[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test02.scala)
-&nbsp;  
-&nbsp;  
-
-- Case 3  
-
-If you want to override the `id` property but you can't change the table for some reason(like you are using codegen). You can use the `RootTable` annotation.
-
-```scala
-case class Friend(id: Option[Long], name: String, nick: String, age: Int)
-
-class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickMapper {
-  self =>
-
-  def id   = column[Long]("id", O.AutoInc)
-  def name = column[String]("name")
-  def nick = column[String]("nick")
-  def age  = column[Int]("age")
-
-  override def * =
-    shino.effect(shino.singleModel[Friend](new FriendTableExt { override val ft = self }: FriendTableExt).compile).shape
-
+class FriendTableToOutput(tag: slick.lifted.Tag) extends FriendTable(tag) with SlickResultIO {
+  @OverrideProperty(name = "age")
+  def ageExt = shinoOutput.shaped(age).dmap(s => s + 1234)
+  val getter = shinoOutput.effect(shinoOutput.singleModel[Friend](this).compile).shape
 }
 
-trait FriendTableExt {
+val friendTq       = TableQuery[FriendTable]
+val friendTqOutput = TableQuery[FriendTableToOutput]
 
-  @RootTable val ft: FriendTable
-
-  def id = ft.id.?
-
-}
-
-val friendTq = TableQuery[FriendTable]
+friendTqOutput.sortBy(_.id).map(_.getter).to[List].result // DBIO[List[Friend]]
 ```
+Shino can map column many times. No need to worry about this [issue](https://github.com/slick/slick/issues/1894).
 
-`RootTable` will promote all the properties of FriendTable to the root of FriendTableExt. But the properties defined in FriendTableExt will definitely override the properties defined in FriendTable.
-
-[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test03.scala)
+[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/umr/reader/Test03.scala)
 &nbsp;  
 &nbsp;  
 
 - Case 4  
-
-You can use `shino.shaped` to lift your column. Then you can use method `fmap` and `fzip` to manipulate the columns.
-
-```scala
-case class Friend(id: Long, name: String, nick: String, age: Int)
-
-class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickMapper {
-  def id   = column[Long]("id", O.AutoInc)
-  def name = shino.shaped(column[String]("name")).fmap(s => "user name:" + s)(t => t)
-  def nick = column[String]("nick")
-  def age  = column[Int]("age")
-
-  override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
-}
-
-val friendTq = TableQuery[FriendTable]
-```
-Shino can map column many times. No need to worry about this [issue](https://github.com/slick/slick/issues/1894).
-
-[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test04.scala)
-&nbsp;  
-&nbsp;  
-
-- Case 5  
 
 If the value of columnA depends on columnB, but columnB also needs to be evaluated separately. You can use `RootModel` to avoid selecting columnB twice. But you need to define a case class with the same fields as the original case class first.
 
@@ -145,46 +104,51 @@ If the value of columnA depends on columnB, but columnB also needs to be evaluat
 case class Friend(id: Long, name: String, nick: String, age: Int)
 case class NameAndAge(name: String, age: Int)
 
-class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickMapper {
-  def id       = column[Long]("id", O.AutoInc)
-  def name_ext = column[String]("name")
-  def nick     = column[String]("nick")
-  def age_ext  = column[Int]("age")
-
-  @RootModel[NameAndAge]
-  def name_age =
-    shino.shaped(name_ext)
-      .fzip(shino.shaped(age_ext))
-      .fmap { case (name, age) => NameAndAge("user name:" + name + ", age:" + age, age) }(t => (t.name, t.age))
+class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
+  def id   = column[Long]("id", O.AutoInc)
+  def name = column[String]("name")
+  def nick = column[String]("nick")
+  def age  = column[Int]("age")
 
   override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
 }
 
+class FriendTableToInsert(@(RootTable @getter) val ft: FriendTable) extends SlickResultIO {
+  @RootModel[NameAndAge]
+  def nameAndAge = shinoOutput.shaped(ft.name).dzip(shinoOutput.shaped(ft.age)).dmap { case (name, age) => NameAndAge(s"${name}(law age: ${age})", age + 1) }
+  val getter     = shinoOutput.effect(shinoOutput.singleModel[Friend](this).compile).shape
+}
+
 val friendTq = TableQuery[FriendTable]
+
+friendTq.sortBy(_.id).map(s => new FriendTableToInsert(s).getter).to[List].result // DBIO[List[Friend]] with name and age field changed
 ```
 
 Note that the annotation has expected you to get the val of type `NameAndAge`. It can be either Rep[NameAndAge] or a value that is manipulated by `shino.shaped`.
 
-[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test05.scala)
+[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/umr/reader/Test04.scala)
 &nbsp;  
 &nbsp;  
 
-- Case 6  
+- Case 5  
 
 If column name, nick, age does not require filters, sortby and so on. They only need to be select, insert and update. You can mixin `ColumnHelper` and override `columnGenerator`. Then you no need to define methods such as name, nick, age.
 
 ```scala
-case class Friend(id: Long, name: String, nick: String, age: Int)
-
-class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickMapper with ColumnHelper {
+class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO with ColumnHelper {
 
   def id   = column[Long]("id", O.AutoInc)
   def name = Placeholder.value[String]
 
   override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
 
+  val getter = shinoOutput.effect(shinoOutput.singleModel[Friend](this).compile).shape
+
   override def columnGenerator[D](name: String, typedType: TypedType[D]): Rep[D] = {
-    val newName = toSnakeName(name)
+    val newName = name match {
+      case "age" => "age_ext"
+      case r     => r
+    }
     column(newName)(typedType)
   }
 
@@ -197,4 +161,4 @@ Note:
 - If you must override existing property(like `name` here). You can use `Placeholder.value[String]` to get the same behavior explicitly.
 - Column id still use `def id`. So if you want to map a specific column, just defining a same name property.
 
-[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/Test06.scala)
+[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/umr/reader/Test05.scala)
