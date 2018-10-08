@@ -124,7 +124,7 @@ val friendTq = TableQuery[FriendTable]
 friendTq.sortBy(_.id).map(s => new FriendTableToInsert(s).getter).to[List].result // DBIO[List[Friend]] with name and age field changed
 ```
 
-Note that the annotation has expected you to get the val of type `NameAndAge`. It can be either Rep[NameAndAge] or a value that is manipulated by `shino.shaped`.
+Note that the annotation has expected you to get the val of type `NameAndAge`. It can be either Rep[NameAndAge] or a value that is manipulated by `shinoOutput.shaped`.
 
 [Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/umr/reader/Test04.scala)
 &nbsp;  
