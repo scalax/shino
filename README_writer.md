@@ -91,7 +91,7 @@ class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") wi
 class FriendTableToInsert(tag: slick.lifted.Tag) extends FriendTable(tag) with SlickResultIO {
   @OverrideProperty(name = "age")
   def ageExt = shinoInput.shaped(column[Int]("age")).emap[Int](s => s + 1234)
-  val setter = shinoInput.effect(shinoInput.singleModel[Friend](this).compile).shape
+  def setter = shinoInput.effect(shinoInput.singleModel[Friend](this).compile).shape
 }
 
 val friendTq         = TableQuery[FriendTable]
@@ -124,15 +124,17 @@ class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") wi
   override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
 }
 
-class FriendTableToInsert(@(RootTable @getter) val ft: FriendTable) extends SlickResultIO {
+trait FriendTableToInsert extends SlickResultIO {
+  @(RootTable @getter)
+  val ft: FriendTable
   @RootModel[NameAndAge]
   def nameAndAge = shinoInput.shaped(ft.name).ezip(shinoInput.shaped(ft.age)).emap[NameAndAge](s => (s"${s.name}(law age: ${s.age})", s.age + 1))
-  val setter     = shinoInput.effect(shinoInput.singleModel[Friend](this).compile).shape
+  def setter     = shinoInput.effect(shinoInput.singleModel[Friend](this).compile).shape
 }
 
 val friendTq = TableQuery[FriendTable]
 
-friendTq.map(s => new FriendTableToInsert(s).setter).returning(friendTq.map(_.id))
+val insert = friendTq.map(s => new FriendTableToInsert { override val ft = s }.setter).returning(friendTq.map(_.id))
 
 val friend1DBIO = insert += friend1 // change name and age field and then insert.
 ```

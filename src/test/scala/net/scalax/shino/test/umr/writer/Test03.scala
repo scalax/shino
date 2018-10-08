@@ -28,7 +28,7 @@ class Test03 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
   class FriendTableToInsert(tag: slick.lifted.Tag) extends FriendTable(tag) with SlickResultIO {
     @OverrideProperty(name = "age")
     def ageExt = shinoInput.shaped(column[Int]("age")).emap[Int](s => s + 1234)
-    val setter = shinoInput.effect(shinoInput.singleModel[Friend](this).compile).shape
+    def setter = shinoInput.effect(shinoInput.singleModel[Friend](this).compile).shape
   }
 
   val friendTq         = TableQuery[FriendTable]

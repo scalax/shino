@@ -30,7 +30,7 @@ class Test04 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
   class FriendTableToInsert(@(RootTable @getter) val ft: FriendTable) extends SlickResultIO {
     @RootModel[NameAndAge]
     def nameAndAge = shinoOutput.shaped(ft.name).dzip(shinoOutput.shaped(ft.age)).dmap { case (name, age) => NameAndAge(s"${name}(law age: ${age})", age + 1) }
-    val getter     = shinoOutput.effect(shinoOutput.singleModel[Friend](this).compile).shape
+    def getter     = shinoOutput.effect(shinoOutput.singleModel[Friend](this).compile).shape
   }
 
   val friendTq = TableQuery[FriendTable]

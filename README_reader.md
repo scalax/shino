@@ -82,7 +82,7 @@ class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") wi
 class FriendTableToOutput(tag: slick.lifted.Tag) extends FriendTable(tag) with SlickResultIO {
   @OverrideProperty(name = "age")
   def ageExt = shinoOutput.shaped(age).dmap(s => s + 1234)
-  val getter = shinoOutput.effect(shinoOutput.singleModel[Friend](this).compile).shape
+  def getter = shinoOutput.effect(shinoOutput.singleModel[Friend](this).compile).shape
 }
 
 val friendTq       = TableQuery[FriendTable]
@@ -116,7 +116,7 @@ class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") wi
 class FriendTableToInsert(@(RootTable @getter) val ft: FriendTable) extends SlickResultIO {
   @RootModel[NameAndAge]
   def nameAndAge = shinoOutput.shaped(ft.name).dzip(shinoOutput.shaped(ft.age)).dmap { case (name, age) => NameAndAge(s"${name}(law age: ${age})", age + 1) }
-  val getter     = shinoOutput.effect(shinoOutput.singleModel[Friend](this).compile).shape
+  def getter     = shinoOutput.effect(shinoOutput.singleModel[Friend](this).compile).shape
 }
 
 val friendTq = TableQuery[FriendTable]
