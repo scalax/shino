@@ -1,4 +1,4 @@
-package net.scalax.shino.test.umr.formatter
+package net.scalax.shino.test.umr.reader
 
 import java.util.Locale
 
@@ -14,6 +14,7 @@ import scala.concurrent.{duration, Await, Future}
 class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
 
   case class Friend(id: Long, name: String, nick: String, age: Int)
+  case class FriendReader(name: String, nick: String)
 
   class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
     def id   = column[Long]("id", O.AutoInc)
@@ -22,6 +23,8 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     def age  = column[Int]("age")
 
     override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
+
+    def reader = shinoOutput.effect(shinoOutput.singleModel[FriendReader](this).compile).shape
   }
 
   val friendTq = TableQuery[FriendTable]
@@ -33,9 +36,11 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  val db = Database.forURL(s"jdbc:h2:mem:formatter_test01;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
+  val db = Database.forURL(s"jdbc:h2:mem:reader_test01;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
 
-  override def beforeAll = await(db.run(friendTq.schema.create))
+  override def beforeAll = {
+    await(db.run(friendTq.schema.create))
+  }
 
   val friend1 = Friend(-1, faker.name.name, faker.weather.description, 23)
   val friend2 = Friend(-1, faker.name.name, faker.weather.description, 26)
@@ -56,13 +61,13 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
     val insertIds = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
 
-    val result = await(db.run(friendTq.result))
+    val result = await(db.run(friendTq.sortBy(_.id).map(_.reader).result))
 
     insertIds.size should be(3)
     insertIds.map { s =>
       (s > 0) should be(true)
     }
-    result.toList.map(s => s.copy(id = -1)) should be(List(friend1, friend2, friend3))
+    result.toList should be(List(friend1, friend2, friend3).map(s => FriendReader(name = s.name, nick = s.nick)))
   }
 
 }

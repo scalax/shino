@@ -1,4 +1,4 @@
-package net.scalax.shino.test
+package net.scalax.shino.test.samples.rmu
 
 import io.circe.{Encoder, Json, JsonObject}
 import net.scalax.asuna.core.decoder.DecoderShapeValue
@@ -8,38 +8,38 @@ import net.scalax.asuna.mapper.encoder.{EncoderContent, EncoderWrapperHelper}
 import net.scalax.shino.umr.{SlickResultIO, SlickShapeValueWrap}
 import slick.lifted.{FlatShapeLevel, Shape}
 
-trait RmuWrapper[RepOut, DataType] extends EncoderContent[RepOut, DataType] {
+trait RmuOutputWrapper[RepOut, DataType] extends EncoderContent[RepOut, DataType] {
   self =>
   import SlickResultIO._
 
   def repCol: List[(String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)])]
   lazy val shape: DecoderShapeValue[JsonObject, SlickShapeValueWrap[(Any, Any)], (Any, Any)] =
     shinoOutput.shaped(repCol.map(s => s._2.dmap(r => (s._1, r)))).dmap(JsonObject.fromIterable)
-  def filter(s: String => Boolean): RmuWrapper[RepOut, DataType] = new RmuWrapper[RepOut, DataType] {
+  def filter(s: String => Boolean): RmuOutputWrapper[RepOut, DataType] = new RmuOutputWrapper[RepOut, DataType] {
     override val repCol = self.repCol.filter(r => s(r._1))
   }
 }
 
-trait RmuHelper {
+trait RmuOutputHelper {
 
   import SlickResultIO._
 
-  object rmu extends EncoderWrapperHelper[List[(String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)])], Unit, RmuWrapper] {
+  object rmuOutput extends EncoderWrapperHelper[List[(String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)])], Unit, RmuOutputWrapper] {
     override def effect[Rep, D, Out](
         rep: Rep
     )(
         implicit shape: EncoderShape.Aux[Rep, D, Out, List[(String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)])], Unit]
-    ): RmuWrapper[Out, D] = {
+    ): RmuOutputWrapper[Out, D] = {
       val shape1  = shape
       val wrapCol = shape1.wrapRep(rep)
       val reps    = shape1.toLawRep(wrapCol, List.empty)
-      new RmuWrapper[Out, D] {
+      new RmuOutputWrapper[Out, D] {
         override val repCol = reps
       }
     }
   }
 
-  implicit def rmuWrapperRepImplicit1[R, D, T, L <: FlatShapeLevel](
+  implicit def rmuOutputWrapperRepImplicit1[R, D, T, L <: FlatShapeLevel](
       implicit shape: Shape[L, R, D, T]
     , encoder: Encoder[D]
   ): EncoderShape.Aux[RepColumnContent[R, D], D, (String, DecoderShapeValue[Json, SlickShapeValueWrap[(Any, Any)], (Any, Any)]), List[

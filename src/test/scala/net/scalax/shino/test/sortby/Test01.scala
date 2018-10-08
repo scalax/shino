@@ -3,7 +3,6 @@ package net.scalax.shino.test.sortby
 import java.util.Locale
 
 import com.github.javafaker.Faker
-import net.scalax.asuna.mapper.common.ShapeHelper
 import net.scalax.shino.sortby.{NullsOrdering, SortBy}
 import net.scalax.shino.umr.{SlickResultIO, SortByMapper}
 import slick.jdbc.H2Profile.api._
@@ -26,7 +25,7 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     val value: FriendSort = apply()
   }
 
-  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO with SortByMapper with ShapeHelper {
+  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO with SortByMapper {
     def id   = column[Long]("id", O.AutoInc)
     def name = column[String]("name")
     def nick = column[String]("nick")

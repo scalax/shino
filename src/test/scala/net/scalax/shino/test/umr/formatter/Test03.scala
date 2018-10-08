@@ -54,7 +54,7 @@ class Test03 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  val db = Database.forURL(s"jdbc:h2:mem:test03;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
+  val db = Database.forURL(s"jdbc:h2:mem:formatter_test03;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
 
   override def beforeAll = {
     await(db.run(friendTq.schema.create))

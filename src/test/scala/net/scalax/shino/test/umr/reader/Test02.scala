@@ -1,11 +1,10 @@
-package net.scalax.shino.test.sortby
+package net.scalax.shino.test.umr.reader
 
 import java.util.Locale
 
 import com.github.javafaker.Faker
-import net.scalax.asuna.mapper.common.annotations.RootTable
-import net.scalax.shino.sortby.{NullsOrdering, SortBy}
-import net.scalax.shino.umr.{SlickResultIO, SortByContent, SortByMapper}
+import net.scalax.asuna.mapper.common.annotations.OverrideProperty
+import net.scalax.shino.umr.SlickResultIO
 import slick.jdbc.H2Profile.api._
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
@@ -16,35 +15,23 @@ import scala.concurrent.{duration, Await, Future}
 class Test02 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
 
   case class Friend(id: Long, name: String, nick: String, age: Int)
-  case class FriendSort(
-      nick: NullsOrdering = SortBy.default
-  )
-  object FriendSort {
-    val value: FriendSort = apply()
-  }
+  case class FriendGetter(name: String, nick: String, tableProvider: Int)
 
-  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO with SortByMapper {
-    self =>
-
+  class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
     def id   = column[Long]("id", O.AutoInc)
     def name = column[String]("name")
     def nick = column[String]("nick")
     def age  = column[Int]("age")
 
+    override def tableProvider = super.tableProvider // Already used.
+
+    @OverrideProperty(name = "tableProvider")
+    def nameLength = name.length
+
     override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
 
-    def orderDef = sortby.effect(sortby.singleModel[FriendSort](new FriendTableToSortBy { override val ft = self }).compile).inputData(FriendSort.value)
+    def reader = shinoOutput.effect(shinoOutput.singleModel[FriendGetter](this).compile).shape
 
-  }
-
-  trait FriendTableToSortBy extends SortByMapper {
-    self =>
-
-    @RootTable val ft: FriendTable
-
-    def nick = sortby.shaped(SortByContent("nick", ft.nick)).ezip(sortby.shaped(SortByContent("name", ft.name))).emap[NullsOrdering] { s =>
-      (s, s)
-    }
   }
 
   val friendTq = TableQuery[FriendTable]
@@ -56,7 +43,7 @@ class Test02 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  val db = Database.forURL(s"jdbc:h2:mem:sortby_test02;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
+  val db = Database.forURL(s"jdbc:h2:mem:reader_test02;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
 
   override def beforeAll = {
     await(db.run(friendTq.schema.create))
@@ -81,20 +68,15 @@ class Test02 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
     val insertIds = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
 
-    val result = await(db.run(friendTq.sortBy { s =>
-      val i    = s.orderDef
-      val sOpt = SortBy.strictMutiplySort(i.strictSort("name", SortBy.DESC, SortBy.NULLS_LAST))
-      sOpt match {
-        case Right(s) => s
-        case Left(e)  => throw new IllegalArgumentException(e.toString)
-      }
-    }.result))
+    val resultDBIO = await(db.run(friendTq.map(_.reader).result))
 
     insertIds.size should be(3)
     insertIds.map { s =>
       (s > 0) should be(true)
     }
-    result.toList.map(s => s.copy(id = -1)) should be(List(friend1, friend2, friend3).sortBy(_.name).reverse)
+    resultDBIO.toList should be(
+        List(friend1, friend2, friend3).map(s => FriendGetter(name = s.name, nick = s.nick, tableProvider = s.name.size))
+    )
   }
 
 }

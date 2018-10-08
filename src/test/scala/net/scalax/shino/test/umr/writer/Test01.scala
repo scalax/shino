@@ -23,18 +23,11 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     def age  = column[Int]("age")
 
     override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
+
+    def setter = shino.effect(shino.singleModel[FriendSetter](this).compile).shape
   }
 
-  class FriendTableToInsert(tag: slick.lifted.Tag) extends Table[FriendSetter](tag, "firend") with SlickResultIO {
-    def id   = column[Long]("id", O.AutoInc)
-    def name = column[String]("name")
-    def nick = column[String]("nick")
-
-    override def * = shino.effect(shino.singleModel[FriendSetter](this).compile).shape
-  }
-
-  val friendTq         = TableQuery[FriendTable]
-  val friendTqToInsert = TableQuery[FriendTableToInsert]
+  val friendTq = TableQuery[FriendTable]
 
   val local = new Locale("zh", "CN")
   val faker = new Faker(local)
@@ -67,7 +60,7 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     val friend3DBIO = insert += friend3
 
     val insertIds    = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
-    val updateAction = await(db.run(friendTqToInsert.filter(s => (s.id % 2L) === 1L).update(FriendSetter(name = "namenamename", nick = "miaomiaomiao"))))
+    val updateAction = await(db.run(friendTq.filter(s => (s.id % 2L) === 1L).map(_.setter).update(FriendSetter(name = "namenamename", nick = "miaomiaomiao"))))
 
     val result = await(db.run(friendTq.sortBy(_.id).result))
 

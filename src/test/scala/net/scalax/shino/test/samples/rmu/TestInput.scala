@@ -1,11 +1,9 @@
-package net.scalax.shino.test
+package net.scalax.shino.test.samples.rmu
 
 import java.util.Locale
 
 import com.github.javafaker.Faker
-import io.circe.JsonObject
-import io.circe.syntax._
-import io.circe.generic.auto._
+import io.circe.{Json, JsonObject}
 import net.scalax.asuna.mapper.common.annotations.OverrideProperty
 import net.scalax.shino.umr.SlickResultIO
 import slick.jdbc.H2Profile.api._
@@ -15,7 +13,7 @@ import org.slf4j.LoggerFactory
 
 import scala.concurrent.{duration, Await, Future}
 
-class Test extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
+class TestInput extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
 
   case class Friend(id: Option[Long], name: String, nick: String, age: Int)
 
@@ -31,14 +29,13 @@ class Test extends FlatSpec with Matchers with EitherValues with ScalaFutures wi
     override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
   }
 
-  case class IdFriend(id: Option[Long], props: JsonObject)
-  case class JsonFriend(name: String, nick: String, age: Int)
+  case class JsonFriend(props: JsonObject)
+  case class JsonFriendModel(name: String, nick: String, age: Int)
 
-  class JsonFriendTable(ft: FriendTable, names: List[String]) extends Table[IdFriend](ft.tableTag, ft.tableName) with SlickResultIO with RmuHelper {
-    def id    = ft.id.?
-    def props = rmu.effect(rmu.singleModel[JsonFriend](ft).compile).filter(s => names.contains(s)).shape
+  class JsonFriendTable(ft: FriendTable, names: List[String]) extends Table[JsonFriend](ft.tableTag, ft.tableName) with SlickResultIO with RmuInputHelper {
+    def props = rmuInput.effect(rmuInput.singleModel[JsonFriendModel](ft).compile).filter(s => names.contains(s)).shape
 
-    override def * = shinoOutput.effect(shinoOutput.singleModel[IdFriend](this).compile).shape
+    override def * = shinoInput.effect(shinoInput.singleModel[JsonFriend](this).compile).shape
   }
 
   val friendTq                          = TableQuery[FriendTable]
@@ -51,7 +48,7 @@ class Test extends FlatSpec with Matchers with EitherValues with ScalaFutures wi
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  val db = Database.forURL(s"jdbc:h2:mem:rmu_test01;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
+  val db = Database.forURL(s"jdbc:h2:mem:rmu_input_test01;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
 
   override def beforeAll = {
     await(db.run(friendTq.schema.create))
@@ -76,15 +73,18 @@ class Test extends FlatSpec with Matchers with EitherValues with ScalaFutures wi
 
     val names = List("name", "age")
 
-    val insertIds = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
-    val result    = await(db.run(jsonFriendTq(names).result))
+    val jsonObject = JsonObject.fromMap(Map("name" -> Json.fromString("name1"), "age" -> Json.fromInt(2333), "nick" -> Json.fromString("not to use")))
+
+    val insertIds    = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
+    val updateAction = await(db.run(jsonFriendTq(names).update(JsonFriend(jsonObject))))
+    val result       = await(db.run(friendTq.sortBy(_.id).result))
 
     insertIds.size should be(3)
     insertIds.map { s =>
       (s > 0) should be(true)
     }
     result.toList.map(s => s.copy(id = Option.empty)) should be(
-        List(friend1, friend2, friend3).map(s => IdFriend(Option.empty, s.asJsonObject.remove("id").remove("nick")))
+        List(friend1, friend2, friend3).map(s => s.copy(name = "name1", age = 2333))
     )
   }
 

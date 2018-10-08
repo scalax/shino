@@ -1,8 +1,11 @@
-package net.scalax.shino.test.umr.formatter
+package net.scalax.shino.test.samples.rmu
 
 import java.util.Locale
 
 import com.github.javafaker.Faker
+import io.circe.JsonObject
+import io.circe.syntax._
+import io.circe.generic.auto._
 import net.scalax.asuna.mapper.common.annotations.OverrideProperty
 import net.scalax.shino.umr.SlickResultIO
 import slick.jdbc.H2Profile.api._
@@ -12,7 +15,7 @@ import org.slf4j.LoggerFactory
 
 import scala.concurrent.{duration, Await, Future}
 
-class Test02 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
+class TestOutput extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
 
   case class Friend(id: Option[Long], name: String, nick: String, age: Int)
 
@@ -28,7 +31,18 @@ class Test02 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
   }
 
-  val friendTq = TableQuery[FriendTable]
+  case class IdFriend(id: Option[Long], props: JsonObject)
+  case class JsonFriend(name: String, nick: String, age: Int)
+
+  class JsonFriendTable(ft: FriendTable, names: List[String]) extends Table[IdFriend](ft.tableTag, ft.tableName) with SlickResultIO with RmuOutputHelper {
+    def id    = ft.id.?
+    def props = rmuOutput.effect(rmuOutput.singleModel[JsonFriend](ft).compile).filter(s => names.contains(s)).shape
+
+    override def * = shinoOutput.effect(shinoOutput.singleModel[IdFriend](this).compile).shape
+  }
+
+  val friendTq                          = TableQuery[FriendTable]
+  def jsonFriendTq(names: List[String]) = TableQuery(cons => new JsonFriendTable(new FriendTable(cons), names))
 
   val local = new Locale("zh", "CN")
   val faker = new Faker(local)
@@ -37,7 +51,7 @@ class Test02 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  val db = Database.forURL(s"jdbc:h2:mem:formatter_test02;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
+  val db = Database.forURL(s"jdbc:h2:mem:rmu_output_test01;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
 
   override def beforeAll = {
     await(db.run(friendTq.schema.create))
@@ -60,14 +74,18 @@ class Test02 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     val friend2DBIO = insert += friend2
     val friend3DBIO = insert += friend3
 
+    val names = List("name", "age")
+
     val insertIds = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
-    val result    = await(db.run(friendTq.result))
+    val result    = await(db.run(jsonFriendTq(names).result))
 
     insertIds.size should be(3)
     insertIds.map { s =>
       (s > 0) should be(true)
     }
-    result.toList.map(s => s.copy(id = Option.empty)) should be(List(friend1, friend2, friend3))
+    result.toList.map(s => s.copy(id = Option.empty)) should be(
+        List(friend1, friend2, friend3).map(s => IdFriend(Option.empty, s.asJsonObject.remove("id").remove("nick")))
+    )
   }
 
 }
