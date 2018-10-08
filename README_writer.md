@@ -137,7 +137,7 @@ friendTq.map(s => new FriendTableToInsert(s).setter).returning(friendTq.map(_.id
 val friend1DBIO = insert += friend1 // change name and age field and then insert.
 ```
 
-Note that the annotation has expected you to get the val of type `NameAndAge`. It can be either Rep[NameAndAge] or a value that is manipulated by `shino.shaped`.
+Note that the annotation has expected you to get the val of type `NameAndAge`. It can be either Rep[NameAndAge] or a value that is manipulated by `shinoInput.shaped`.
 
 [Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/umr/writer/Test04.scala)
 &nbsp;  
