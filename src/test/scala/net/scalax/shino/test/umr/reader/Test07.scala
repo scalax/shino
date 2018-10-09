@@ -57,9 +57,9 @@ class Test07 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
   case class TempModel(id: Long, name: String, age: Int)
   case class TempModel2(name: String)
 
-  val tempQuery  = friendTq.sortBy(_.id).map(s => TempTable(id = s.id, name = s.name, age = s.age).customShape)
-  val tempQuery2 = friendTq.sortBy(_.id).map(s => TempTable(id = s.id, name = s.name, age = s.age).customShape2)
-  val tempQuery3 = friendTq.sortBy(_.id).map(s => TempTable(id = s.id, name = s.name, age = s.age).customShape3)
+  val tempQuery: Query[Any, TempModel, Seq]   = friendTq.sortBy(_.id).map(s => TempTable(id = s.id, name = s.name, age = s.age).customShape)
+  val tempQuery2: Query[Any, TempModel2, Seq] = friendTq.sortBy(_.id).map(s => TempTable(id = s.id, name = s.name, age = s.age).customShape2)
+  val tempQuery3: Query[Any, String, Seq]     = friendTq.sortBy(_.id).map(s => TempTable(id = s.id, name = s.name, age = s.age).customShape3)
 
   "shape" should "auto map with table and case class" in {
     val insert = friendTq.returning(friendTq.map(_.id))
