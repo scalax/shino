@@ -50,11 +50,16 @@ class Test07 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
   }
 
   case class TempTable(id: Rep[Long], name: Rep[String], age: Rep[Int]) extends SlickResultIO {
-    def customShape = shino.effect(shino.singleModel[TempModel](this).compile).shape
+    def customShape  = shino.effect(shino.singleModel[TempModel](this).compile).shape
+    def customShape2 = shino.effect(shino.singleModel[TempModel2](this).compile).shape
+    def customShape3 = shinoOutput.effect(shinoOutput.singleModel[TempModel](this).compile.dmap(s => s.name)).shape
   }
   case class TempModel(id: Long, name: String, age: Int)
+  case class TempModel2(name: String)
 
-  val tempQuery = friendTq.sortBy(_.id).map(s => TempTable(id = s.id, name = s.name, age = s.age).customShape)
+  val tempQuery  = friendTq.sortBy(_.id).map(s => TempTable(id = s.id, name = s.name, age = s.age).customShape)
+  val tempQuery2 = friendTq.sortBy(_.id).map(s => TempTable(id = s.id, name = s.name, age = s.age).customShape2)
+  val tempQuery3 = friendTq.sortBy(_.id).map(s => TempTable(id = s.id, name = s.name, age = s.age).customShape3)
 
   "shape" should "auto map with table and case class" in {
     val insert = friendTq.returning(friendTq.map(_.id))
@@ -65,7 +70,9 @@ class Test07 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
     val insertIds = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
 
-    val result = await(db.run(tempQuery.result))
+    val result  = await(db.run(tempQuery.result))
+    val result2 = await(db.run(tempQuery2.result))
+    val result3 = await(db.run(tempQuery3.result))
 
     result.size should be(3)
     result.map { s =>
@@ -77,6 +84,22 @@ class Test07 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
           TempModel(1, friend1.name, friend1.age)
         , TempModel(2, friend2.name, friend2.age)
         , TempModel(3, friend3.name, friend3.age)
+      )
+    )
+
+    result2.toList should be(
+        List(
+          TempModel2(friend1.name)
+        , TempModel2(friend2.name)
+        , TempModel2(friend3.name)
+      )
+    )
+
+    result3.toList should be(
+        List(
+          friend1.name
+        , friend2.name
+        , friend3.name
       )
     )
   }
