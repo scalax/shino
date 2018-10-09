@@ -8,6 +8,7 @@ import slick.jdbc.H2Profile.api._
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import org.slf4j.LoggerFactory
+import slick.lifted.{ProvenShape, Shape}
 
 import scala.concurrent.{duration, Await, Future}
 
@@ -112,8 +113,38 @@ class Test08 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
   }
 
-  object Wrap extends SlickResultIO {
-    def toGetter(ft: FriendTable) = shino.effect(shino.singleModel[SubFriend](ft).compile).shape
+  class SubFriendTable(ft: FriendTable) extends ProvenShape[SubFriend] with SlickResultIO {
+    def i1  = ft.i1
+    def i2  = ft.i2
+    def i3  = ft.i3
+    def i4  = ft.i4
+    def i5  = ft.i5
+    def i6  = ft.i6
+    def i7  = ft.i7
+    def i8  = ft.i8
+    def i9  = ft.i9
+    def i10 = ft.i10
+    def i11 = ft.i11
+    def i12 = ft.i12
+    def i13 = ft.i13
+    def i14 = ft.i14
+    def i15 = ft.i15
+    def i16 = ft.i16
+    def i17 = ft.i17
+    def i18 = ft.i18
+    def i19 = ft.i19
+    def i20 = ft.i20
+    def i21 = ft.i21
+    def i22 = ft.i22
+    def i23 = ft.i23
+    def i24 = ft.i24
+    def i25 = ft.i25
+    def i26 = ft.i26
+
+    val proShape: ProvenShape[SubFriend]                                                  = shino.effect(shino.singleModel[SubFriend](this).compile).shape
+    override def value                                                                    = proShape.value
+    override val shape                                                                    = proShape.shape
+    override def packedValue[R](implicit ev: Shape[_ <: FlatShapeLevel, _, SubFriend, R]) = proShape.packedValue(ev)
   }
 
   val friendTq = TableQuery[FriendTable]
@@ -150,7 +181,7 @@ class Test08 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
     val insertIds = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
 
-    val result = await(db.run(friendTq.map(s => Wrap.toGetter(s)).result))
+    val result = await(db.run(friendTq.map(s => new SubFriendTable(s)).result))
 
     result.toList should be(
         List(
