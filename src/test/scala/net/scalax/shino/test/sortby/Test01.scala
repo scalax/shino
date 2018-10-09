@@ -34,7 +34,6 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
 
     def orderDef = sortby.effect(sortby.singleModel[FriendSort](this).compile).inputData(FriendSort.value)
-
   }
 
   val friendTq = TableQuery[FriendTable]

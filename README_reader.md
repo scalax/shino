@@ -162,3 +162,13 @@ Note:
 - Column id still use `def id`. So if you want to map a specific column, just defining a same name property.
 
 [Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/umr/reader/Test05.scala)
+
+- Case 6  
+
+If you have some attributes that are not evaluated immediately.
+You can use `lazyModel` to generate a 
+
+```scala
+```
+
+[Test case](https://github.com/scalax/shino/blob/master/src/test/scala/net/scalax/shino/test/umr/reader/Test06.scala)

@@ -37,26 +37,29 @@ object Test01 extends App {
       }
     }
 
-    implicit def feImplicit1[T]
-      : DecoderShape.Aux[RepColumnContent[Future[Either[Exception, T]], T], T, Future[Either[Exception, T]], WrapHelper, (Any, Any)] = {
-      new DecoderShape[RepColumnContent[Future[Either[Exception, T]], T], WrapHelper, (Any, Any)] {
+    implicit def feImplicit1[T, R](
+        implicit cv: R <:< Either[Exception, T]
+    ): DecoderShape.Aux[RepColumnContent[Future[R], T], T, Future[R], WrapHelper, (Any, Any)] = {
+      new DecoderShape[RepColumnContent[Future[R], T], WrapHelper, (Any, Any)] {
         override type Data   = T
-        override type Target = Future[Either[Exception, T]]
-        override def wrapRep(base: RepColumnContent[Future[Either[Exception, T]], T]): Future[Either[Exception, T]] = base.rep
-        override def toLawRep(base: Future[Either[Exception, T]], oldRep: WrapHelper): WrapHelper = {
-          val either = oldRep.data.flatMap(s => base.map(d => d.right.flatMap(d1 => s.right.map(s1 => (d1, s1): (Any, Any))))(oldRep.ec))(oldRep.ec)
+        override type Target = Future[R]
+        override def wrapRep(base: RepColumnContent[Future[R], T]): Future[R] = base.rep
+        override def toLawRep(base: Future[R], oldRep: WrapHelper): WrapHelper = {
+          val either = oldRep.data.flatMap(s => base.map(d => cv(d).right.flatMap(d1 => s.right.map(s1 => (d1, s1): (Any, Any))))(oldRep.ec))(oldRep.ec)
           WrapHelper(oldRep.ec, either)
         }
-        override def takeData(rep: Future[Either[Exception, T]], oldData: (Any, Any)): SplitData[T, (Any, Any)] =
+        override def takeData(rep: Future[R], oldData: (Any, Any)): SplitData[T, (Any, Any)] =
           SplitData(oldData._1.asInstanceOf[T], oldData._2.asInstanceOf[(Any, Any)])
       }
     }
 
-    implicit def feImplicit2[T]: DecoderShape.Aux[RepColumnContent[Either[Exception, T], T], T, Either[Exception, T], WrapHelper, (Any, Any)] = {
-      new DecoderShape[RepColumnContent[Either[Exception, T], T], WrapHelper, (Any, Any)] {
+    implicit def feImplicit2[T, R](
+        implicit cv: R <:< Either[Exception, T]
+    ): DecoderShape.Aux[RepColumnContent[R, T], T, Either[Exception, T], WrapHelper, (Any, Any)] = {
+      new DecoderShape[RepColumnContent[R, T], WrapHelper, (Any, Any)] {
         override type Data   = T
         override type Target = Either[Exception, T]
-        override def wrapRep(base: RepColumnContent[Either[Exception, T], T]): Either[Exception, T] = base.rep
+        override def wrapRep(base: RepColumnContent[R, T]): Either[Exception, T] = cv(base.rep)
         override def toLawRep(base: Either[Exception, T], oldRep: WrapHelper): WrapHelper = {
           val either = oldRep.data.map(s => base.right.flatMap(d => s.right.map(s1 => (d, s1): (Any, Any))))(oldRep.ec)
           WrapHelper(oldRep.ec, either)
@@ -110,18 +113,19 @@ object Test01 extends App {
   object ModelHelper {
 
     val i1 = 11L
-    val i2 = Future.successful(Right("i2"): Either[Exception, String])
+    val i2 = Right("i2")
 
     @RootModel[FriendSetter]
-    val i3_i4: Either[Exception, FriendSetter] = Right(FriendSetter(i3 = "i3", i4 = 44))
+    val i3_i4 = Future.successful(Right(FriendSetter(i3 = "i3", i4 = 44)))
 
-    val i5                         = Future.successful("iiiiiiii")
-    val i6: Either[Exception, Int] = Right(66)
+    val i5 = Future.successful("iiiiiiii")
+    val i6 = Right(66)
 
   }
 
   object Abc extends Helper {
-    val data = fe.effect(fe.singleModel[Friend](ModelHelper).compile).data(scala.concurrent.ExecutionContext.global)
+    val ec   = scala.concurrent.ExecutionContext.global
+    val data = fe.effect(fe.singleModel[Friend](ModelHelper).compile).data(ec)
   }
 
   println(await(Abc.data))

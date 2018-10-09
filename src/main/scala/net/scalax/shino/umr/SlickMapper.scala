@@ -45,10 +45,10 @@ trait SlickResultIO {
         override def shape(implicit classTag: ClassTag[D]): MappedProjection[D, Any] = {
           ShapedValue(reps.rep, reps.shape)
             .<>(
-                { (t: (Any, Any)) =>
+                f = { (t: (Any, Any)) =>
                 shape1.takeData(wrapCol, t).current
               }
-              , { r: D =>
+              , g = { r: D =>
                 Option(shape1.buildData(r, wrapCol, ((), ())))
               }
             )(classTag)

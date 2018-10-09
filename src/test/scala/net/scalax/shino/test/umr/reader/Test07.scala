@@ -1,9 +1,8 @@
-package net.scalax.shino.test.umr.formatter
+package net.scalax.shino.test.umr.reader
 
 import java.util.Locale
 
 import com.github.javafaker.Faker
-import net.scalax.asuna.mapper.common.annotations.RootModel
 import net.scalax.shino.umr.SlickResultIO
 import slick.jdbc.H2Profile.api._
 import org.scalatest._
@@ -12,23 +11,15 @@ import org.slf4j.LoggerFactory
 
 import scala.concurrent.{duration, Await, Future}
 
-class Test05 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
+class Test07 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
 
   case class Friend(id: Long, name: String, nick: String, age: Int)
-  case class NameAndAge(name: String, age: Int)
 
   class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
-    def id       = column[Long]("id", O.AutoInc)
-    def name_ext = column[String]("name")
-    def nick     = column[String]("nick")
-    def age_ext  = column[Int]("age")
-
-    @RootModel[NameAndAge]
-    def name_age =
-      shino
-        .shaped(name_ext)
-        .fzip(shino.shaped(age_ext))
-        .fmap { case (name, age) => NameAndAge("user name:" + name + ", age:" + age, age) }(t => (t.name, t.age))
+    def id   = column[Long]("id", O.AutoInc)
+    def name = column[String]("name")
+    def nick = column[String]("nick")
+    def age  = column[Int]("age")
 
     override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
   }
@@ -42,7 +33,7 @@ class Test05 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  val db = Database.forURL(s"jdbc:h2:mem:test05;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
+  val db = Database.forURL(s"jdbc:h2:mem:reader_test07;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
 
   override def beforeAll = {
     await(db.run(friendTq.schema.create))
@@ -58,6 +49,13 @@ class Test05 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     await(db.run(friendTq.delete))
   }
 
+  case class TempTable(id: Rep[Long], name: Rep[String], age: Rep[Int]) extends SlickResultIO {
+    def customShape = shino.effect(shino.singleModel[TempModel](this).compile).shape
+  }
+  case class TempModel(id: Long, name: String, age: Int)
+
+  val tempQuery = friendTq.sortBy(_.id).map(s => TempTable(id = s.id, name = s.name, age = s.age).customShape)
+
   "shape" should "auto map with table and case class" in {
     val insert = friendTq.returning(friendTq.map(_.id))
 
@@ -66,13 +64,21 @@ class Test05 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     val friend3DBIO = insert += friend3
 
     val insertIds = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
-    val result    = await(db.run(friendTq.result))
 
-    insertIds.size should be(3)
-    insertIds.map { s =>
-      (s > 0) should be(true)
+    val result = await(db.run(tempQuery.result))
+
+    result.size should be(3)
+    result.map { s =>
+      (s.id > 0) should be(true)
     }
-    result.toList.map(s => s.copy(id = -1)) should be(List(friend1, friend2, friend3).map(s => s.copy(name = "user name:" + s.name + ", age:" + s.age)))
+
+    result.toList should be(
+        List(
+          TempModel(1, friend1.name, friend1.age)
+        , TempModel(2, friend2.name, friend2.age)
+        , TempModel(3, friend3.name, friend3.age)
+      )
+    )
   }
 
 }

@@ -3,9 +3,7 @@ package net.scalax.shino.test.samples.rmu
 import java.util.Locale
 
 import com.github.javafaker.Faker
-import io.circe.JsonObject
-import io.circe.syntax._
-import io.circe.generic.auto._
+import io.circe.{Json, JsonObject}
 import net.scalax.asuna.mapper.common.annotations.OverrideProperty
 import net.scalax.shino.umr.SlickResultIO
 import slick.jdbc.H2Profile.api._
@@ -84,7 +82,11 @@ class TestOutput extends FlatSpec with Matchers with EitherValues with ScalaFutu
       (s > 0) should be(true)
     }
     result.toList.map(s => s.copy(id = Option.empty)) should be(
-        List(friend1, friend2, friend3).map(s => IdFriend(Option.empty, s.asJsonObject.remove("id").remove("nick")))
+        List(
+          IdFriend(Option.empty, JsonObject.fromMap(Map(("name", Json.fromString(friend1.name)), ("age", Json.fromInt(friend1.age)))))
+        , IdFriend(Option.empty, JsonObject.fromMap(Map(("name", Json.fromString(friend2.name)), ("age", Json.fromInt(friend2.age)))))
+        , IdFriend(Option.empty, JsonObject.fromMap(Map(("name", Json.fromString(friend3.name)), ("age", Json.fromInt(friend3.age)))))
+      )
     )
   }
 
