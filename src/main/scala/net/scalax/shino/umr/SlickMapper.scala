@@ -7,7 +7,6 @@ import net.scalax.asuna.mapper.decoder.{DecoderContent, DecoderWrapperHelper}
 import net.scalax.asuna.mapper.encoder.{EncoderContent, EncoderWrapperHelper}
 import net.scalax.asuna.mapper.formatter.{FormatterContent, FormatterWrapperHelper}
 import slick.lifted.{FlatShapeLevel, MappedProjection, Shape, ShapedValue}
-
 import scala.reflect.ClassTag
 
 trait ShinoFormatterWrapper[RepOut, DataType] extends FormatterContent[RepOut, DataType] {
