@@ -8,7 +8,6 @@ import slick.jdbc.H2Profile.api._
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import org.slf4j.LoggerFactory
-import slick.lifted.{ProvenShape, Shape}
 
 import scala.concurrent.{duration, Await, Future}
 
@@ -113,7 +112,7 @@ class Test08 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
   }
 
-  class SubFriendTable(ft: FriendTable) extends ProvenShape[SubFriend] with SlickResultIO {
+  class SubFriendTable(tag: slick.lifted.Tag, ft: FriendTable) extends Table[Unit](ft.tableTag, ft.tableName) with SlickResultIO {
     def i1  = ft.i1
     def i2  = ft.i2
     def i3  = ft.i3
@@ -141,13 +140,20 @@ class Test08 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     def i25 = ft.i25
     def i26 = ft.i26
 
-    val proShape: ProvenShape[SubFriend]                                                  = shino.effect(shino.singleModel[SubFriend](this).compile).shape
-    override def value                                                                    = proShape.value
-    override val shape                                                                    = proShape.shape
-    override def packedValue[R](implicit ev: Shape[_ <: FlatShapeLevel, _, SubFriend, R]) = proShape.packedValue(ev)
+    override def * = ()
+  }
+
+  object SubFriendTable {
+    def apply(ft: FriendTable): SubFriendTable = TableQuery(cons => new SubFriendTable(cons, ft)).baseTableRow
   }
 
   val friendTq = TableQuery[FriendTable]
+
+  object Wrap extends SlickResultIO {
+    def toShape1(sf: SubFriendTable) = {
+      shino.effect(shino.singleModel[SubFriend](sf).compile).shape
+    }
+  }
 
   val local = new Locale("zh", "CN")
   val faker = new Faker(local)
@@ -173,6 +179,7 @@ class Test08 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
   }
 
   "shape" should "auto map with table and case class" in {
+
     val insert = friendTq.returning(friendTq.map(_.id))
 
     val friend1DBIO = insert += friend1
@@ -181,12 +188,25 @@ class Test08 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
     val insertIds = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
 
-    val result = await(db.run(friendTq.map(s => new SubFriendTable(s)).result))
+    val query1: Query[SubFriendTable, Unit, Seq]   = friendTq.map(s => SubFriendTable(s))
+    val subFriendQuery: Query[Any, SubFriend, Seq] = query1.map(s => Wrap.toShape1(s))
+    val query2                                     = query1.map(s => (s.i2, s.i3))
+
+    val result  = await(db.run(subFriendQuery.result))
+    val result2 = await(db.run(query2.result))
 
     result.toList should be(
         List(
           SubFriend()
         , SubFriend()
+        , SubFriend()
+      )
+    )
+
+    result2.toList should be(
+        List(
+          ("i2", "i3")
+        , ("i2", "i3")
         , SubFriend()
       )
     )
