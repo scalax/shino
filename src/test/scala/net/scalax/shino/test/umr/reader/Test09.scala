@@ -182,15 +182,15 @@ class Test09 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
       )
     )
 
-    val query2 = query1.map(s => (s.i2, s.i25))
+    val query2 = query1.map(s => (s.i2._2, s.i25))
 
     val result2 = await(db.run(query2.result))
 
     result2.toList should be(
         List(
-          (("i2", "i3"), 111111)
-        , (("i2", "i3"), 111111)
-        , (("i2", "i3"), 111111)
+          ("i3", 111111)
+        , ("i3", 111111)
+        , ("i3", 111111)
       )
     )
 
