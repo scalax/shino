@@ -194,6 +194,18 @@ class Test09 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
       )
     )
 
+    val action1 = await(db.run(query1.update(SubFriend(i2 = ("1234", "5678")))))
+
+    val result3 = await(db.run(query1.result))
+
+    result3.toList should be(
+        List(
+          SubFriend(i2 = ("1234", "5678"))
+        , SubFriend(i2 = ("1234", "5678"))
+        , SubFriend(i2 = ("1234", "5678"))
+      )
+    )
+
   }
 
 }
