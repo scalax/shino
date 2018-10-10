@@ -172,13 +172,25 @@ class Test09 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
     val query1: Query[SubFriendTable, SubFriend, Seq] = friendTq.map(s => SubFriendTable(i1 = s.i1, i2 = (s.i2, s.i3), i25 = s.i25, i26 = s.i26))
 
-    val result = await(db.run(query1.result))
+    val result1 = await(db.run(query1.result))
 
-    result.toList should be(
+    result1.toList should be(
         List(
           SubFriend()
         , SubFriend()
         , SubFriend()
+      )
+    )
+
+    val query2 = query1.map(s => (s.i2, s.i25))
+
+    val result2 = await(db.run(query2.result))
+
+    result2.toList should be(
+        List(
+          (("i2", "i3"), 111111)
+        , (("i2", "i3"), 111111)
+        , (("i2", "i3"), 111111)
       )
     )
 
