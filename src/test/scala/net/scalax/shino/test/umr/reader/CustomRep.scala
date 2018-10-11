@@ -27,7 +27,7 @@ trait CustomRep {
 
   trait CustomTable[Target <: CustomTable[Target, Model], Model] {
 
-    def customEncodeRef(path: Node, map: Map[String, Int]): Target
+    def customEncodeRef: SEncodeRef[Target]
     def customPack: Target
     def customNode: NodeWrap
 
@@ -42,12 +42,13 @@ trait CustomRep {
         override def pack(value: Target): Target                               = value
         override def packedShape: Shape[FlatShapeLevel, Target, Model, Target] = subSelf
         override def buildParams(extract: Any => Model): Target                = self.buildParams(extract)
-        override def encodeRef(value: Target, path: Node): Any                 = value.customEncodeRef(path, value.customNode.indexMap)
+        override def encodeRef(value: Target, path: Node): Any                 = value.customEncodeRef.customEncoderRef(path, value.customNode.indexMap)
         override def toNode(value: Target): Node                               = value.customNode.node
       }
-      override def buildParams(extract: Any => Model): Target                    = ???
-      override def encodeRef(value: CustomTable[Target, Model], path: Node): Any = value.customPack.customEncodeRef(path, value.customPack.customNode.indexMap)
-      override def toNode(value: CustomTable[Target, Model]): Node               = value.customPack.customNode.node
+      override def buildParams(extract: Any => Model): Target = ???
+      override def encodeRef(value: CustomTable[Target, Model], path: Node): Any =
+        value.customPack.customEncodeRef.customEncoderRef(path, value.customPack.customNode.indexMap)
+      override def toNode(value: CustomTable[Target, Model]): Node = value.customPack.customNode.node
     }
   }
 
@@ -78,8 +79,15 @@ trait CustomRep {
     }
   }
 
-  trait RepEncoderDecoder[RepOut, DataType] extends DecoderContent[RepOut, DataType] {
+  trait SEncodeRef[DataType] {
     def customEncoderRef(path: Node, map: Map[String, Int]): DataType
+  }
+
+  trait RepEncoderDecoder[RepOut, DataType] extends DecoderContent[RepOut, DataType] { self =>
+    def customEncoderRef(path: Node, map: Map[String, Int]): DataType
+    def toRef: SEncodeRef[DataType] = new SEncodeRef[DataType] {
+      override def customEncoderRef(path: Node, map: Map[String, Int]): DataType = self.customEncoderRef(path, map)
+    }
   }
 
   object sEncodeRef extends DecoderWrapperHelper[EncodeRefConvert[EncodeRefWrapTuple2], EncodeRefWrapTuple2, RepEncoderDecoder] {
@@ -138,7 +146,8 @@ trait CustomRep {
     def tranTable: List[Node]
     def mapIndex: Map[String, Int]
     def toNodeWrap(implicit c: ClassTag[DataType]): NodeWrap = {
-      val productNode = ProductNode(ConstArray.from(tranTable))
+      val tableList   = tranTable
+      val productNode = ProductNode(ConstArray.from(tableList))
       def toBase(v: Any) = {
         val s = v.asInstanceOf[DataType]
         new ProductWrapper(to(s))
@@ -148,7 +157,8 @@ trait CustomRep {
         from(product.productIterator.toList)
       }
       val typeNode = TypeMapping(productNode, MappedScalaType.Mapper(toBase, toMapped, None), c)
-      NodeWrap(typeNode, mapIndex)
+      val map      = mapIndex.map { case (key, value) => (key, tableList.size - value) }
+      NodeWrap(typeNode, map)
     }
   }
 
@@ -182,28 +192,15 @@ trait CustomRep {
             override type Repr     = T
             override type DataType = D
             override type Level    = L
-            override val rep                      = shape1.pack(base.rep)
-            override val shape                    = shape1.packedShape
-            override val indexInfo: (String, Int) = (base.columnInfo.modelColumnName, index)
+            override val rep       = shape1.pack(base.rep)
+            override val shape     = shape1.packedShape
+            override val indexInfo = (base.columnInfo.modelColumnName, index)
           }
         }
       }
       override def toLawRep(base: Int => ColumnWrap, oldRep: (List[ColumnWrap], Int)): (List[ColumnWrap], Int) = (base(oldRep._2) :: oldRep._1, oldRep._2 + 1)
       override def takeData(rep: Int => ColumnWrap, oldData: List[Any]): SplitData[D, List[Any]]               = SplitData(oldData.head.asInstanceOf[D], oldData.tail)
       override def buildData(data: D, rep: Int => ColumnWrap, oldData: IndexedSeq[Any]): IndexedSeq[Any]       = data +: oldData
-    }
-  }
-
-  import slick.jdbc.H2Profile.api.{Rep => SRep, _}
-
-  case class Abc(name: String)
-  case class AbcTable(name: SRep[String]) extends CustomTable[AbcTable, Abc] {
-    self =>
-    override def customEncodeRef(path: Node, map: Map[String, Int]): AbcTable =
-      sEncodeRef.effect(sEncodeRef.singleModel[AbcTable](self).compile).customEncoderRef(path, map)
-    override def customPack: AbcTable = sTarget.effect(sTarget.singleModel[AbcTable](self).compile).target
-    override def customNode: NodeWrap = {
-      sNodeGen.effect(sNodeGen.singleModel[Abc](self).compile).toNodeWrap
     }
   }
 

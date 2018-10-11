@@ -1,7 +1,7 @@
 resolvers += Resolver.bintrayRepo(owner = "djx314", repo = "releases")
 resolvers += Resolver.sonatypeRepo("releases")
 
-//libraryDependencies += "net.scalax" %% "asuna-mapper" % "0.0.2-SNAP20181010.1"
+libraryDependencies += "net.scalax" %% "asuna-mapper" % "0.0.2-SNAP20181010.1"
 
 val slickVersion = "3.2.3"
 
@@ -26,4 +26,4 @@ libraryDependencies ++= Seq(
   , "io.circe" %% "circe-parser"
 ).map(_ % circeVersion % Test)
 
-dependsOn(RootProject(file("..") / "asuna"))
+//dependsOn(RootProject(file("..") / "asuna"))
