@@ -183,37 +183,40 @@ class Test09 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
     val insertIds = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
 
-    val query1: Query[SubFriendTable, SubFriend, Seq] =
+    val query1: Query[(Rep[Long], SubFriendTable), (Long, SubFriend), Seq] =
       friendTq.map(
-          s =>
-          SubFriendTable(
-              i1 = s.i1
-            , i2 = (s.i2, s.i3)
-            , i4 = s.i4
-            , i5 = s.i5
-            , i6 = s.i6
-            , i7 = s.i7
-            , i8 = s.i8
-            , i9 = s.i9
-            , i10 = s.i10
-            , i11 = s.i11
-            , i12 = s.i12
-            , i13 = s.i13
-            , i14 = s.i14
-            , i15 = s.i15
-            , i16 = s.i16
-            , i17 = s.i17
-            , i18 = s.i18
-            , i19 = s.i19
-            , i20 = s.i20
-            , i21 = s.i21
-            , i22 = s.i22
-            , i23 = s.i23
-            , i24 = s.i24
-            , i25 = s.i25
-            , i26 = s.i26
-            , i27 = s.i27
-            , i28 = s.i28
+        s =>
+          (
+            s.id,
+            SubFriendTable(
+                i1 = s.i1
+              , i2 = (s.i2, s.i3)
+              , i4 = s.i4
+              , i5 = s.i5
+              , i6 = s.i6
+              , i7 = s.i7
+              , i8 = s.i8
+              , i9 = s.i9
+              , i10 = s.i10
+              , i11 = s.i11
+              , i12 = s.i12
+              , i13 = s.i13
+              , i14 = s.i14
+              , i15 = s.i15
+              , i16 = s.i16
+              , i17 = s.i17
+              , i18 = s.i18
+              , i19 = s.i19
+              , i20 = s.i20
+              , i21 = s.i21
+              , i22 = s.i22
+              , i23 = s.i23
+              , i24 = s.i24
+              , i25 = s.i25
+              , i26 = s.i26
+              , i27 = s.i27
+              , i28 = s.i28
+            )
           )
       )
 
@@ -221,13 +224,13 @@ class Test09 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
     result1.toList should be(
         List(
-          SubFriend()
-        , SubFriend()
-        , SubFriend()
+          (1, SubFriend())
+        , (2, SubFriend())
+        , (3, SubFriend())
       )
     )
 
-    val query2 = query1.map(s => (s.i2._2, s.i25))
+    val query2 = query1.map(s => (s._2.i2._2, s._2.i25))
 
     val result2 = await(db.run(query2.result))
 
@@ -239,9 +242,9 @@ class Test09 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
       )
     )
 
-    val action1 = await(db.run(query1.update(SubFriend(i2 = ("1234", "5678")))))
+    val action1 = await(db.run(query1.map(_._2).update(SubFriend(i2 = ("1234", "5678")))))
 
-    val result3 = await(db.run(query1.result))
+    val result3 = await(db.run(query1.map(_._2).result))
 
     result3.toList should be(
         List(

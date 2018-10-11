@@ -48,7 +48,8 @@ class Test10 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
   )
 
   case class SubFriend[U24, U25](
-      i1: String = "i1"
+      id: Long
+    , i1: String = "i1"
     , i24: U24
     , i25: U25
     , i26: Int = 2222222
@@ -56,15 +57,10 @@ class Test10 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     , i28: String = "i28"
   )
 
-  case class LawSubFriendTable[R24, U24, T24, R25, U25, T25](
-      i1: Rep[String]
-    , i24: R24
-    , i25: R25
-    , i26: Rep[Int]
-    , i27: Rep[Int]
-    , i28: Rep[String]
-  )(implicit val i24Shape: Shape[FlatShapeLevel, R24, U24, T24], val i25Shape: Shape[FlatShapeLevel, R25, U25, T25])
-      extends CustomTable[SubFriendTable[U24, T24, U25, T25], SubFriend[U24, U25]] {
+  case class LawSubFriendTable[R24, U24, T24, R25, U25, T25](id: Rep[Long], i1: Rep[String], i24: R24, i25: R25, i26: Rep[Int], i27: Rep[Int], i28: Rep[String])(
+      implicit val i24Shape: Shape[FlatShapeLevel, R24, U24, T24]
+    , val i25Shape: Shape[FlatShapeLevel, R25, U25, T25]
+  ) extends CustomTable[SubFriendTable[U24, T24, U25, T25], SubFriend[U24, U25]] {
     self =>
     implicit val i24Shape1 = i24Shape.packedShape
     implicit val i25Shape1 = i25Shape.packedShape
@@ -74,15 +70,10 @@ class Test10 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     override def customNode      = sNodeGen.effect(sNodeGen.singleModel[SubFriend[U24, U25]](self).compile).toNodeWrap
   }
 
-  case class SubFriendTable[U24, T24, U25, T25](
-      i1: Rep[String]
-    , i24: T24
-    , i25: T25
-    , i26: Rep[Int]
-    , i27: Rep[Int]
-    , i28: Rep[String]
-  )(implicit i24Shape: Shape[FlatShapeLevel, T24, U24, T24], i25Shape: Shape[FlatShapeLevel, T25, U25, T25])
-      extends CustomTable[SubFriendTable[U24, T24, U25, T25], SubFriend[U24, U25]] {
+  case class SubFriendTable[U24, T24, U25, T25](id: Rep[Long], i1: Rep[String], i24: T24, i25: T25, i26: Rep[Int], i27: Rep[Int], i28: Rep[String])(
+      implicit i24Shape: Shape[FlatShapeLevel, T24, U24, T24]
+    , i25Shape: Shape[FlatShapeLevel, T25, U25, T25]
+  ) extends CustomTable[SubFriendTable[U24, T24, U25, T25], SubFriend[U24, U25]] {
     self =>
     override def customEncodeRef = sEncodeRef.effect(sEncodeRef.singleModel[SubFriendTable[U24, T24, U25, T25]](self).compile).toRef
     override def customPack      = sTarget.effect(sTarget.singleModel[SubFriendTable[U24, T24, U25, T25]](self).compile).target
@@ -160,29 +151,19 @@ class Test10 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
     val insertIds = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
 
-    val query1 = friendTq.map(s => LawSubFriendTable(i1 = s.i1, i24 = "miaomiaomiao", i25 = s.i25, i26 = s.i26, i27 = s.i27, i28 = s.i28))
+    val query1 = friendTq
+      .map(s => LawSubFriendTable(id = s.id, i1 = s.i1, i24 = "miaomiaomiao", i25 = s.i25, i26 = s.i26, i27 = s.i27, i28 = s.i28))
+      .filter(s => (s.id % 2L) === 0L)
 
     val result1 = await(db.run(query1.result))
 
-    result1.toList should be(
-        List(
-          SubFriend(i24 = "miaomiaomiao", i25 = 111111)
-        , SubFriend(i24 = "miaomiaomiao", i25 = 111111)
-        , SubFriend(i24 = "miaomiaomiao", i25 = 111111)
-      )
-    )
+    result1.toList should be(List(SubFriend(id = 2, i24 = "miaomiaomiao", i25 = 111111)))
 
     val query2 = query1.map(s => (s.i24, s.i25))
 
     val result2 = await(db.run(query2.result))
 
-    result2.toList should be(
-        List(
-          ("miaomiaomiao", 111111)
-        , ("miaomiaomiao", 111111)
-        , ("miaomiaomiao", 111111)
-      )
-    )
+    result2.toList should be(List(("miaomiaomiao", 111111)))
 
   }
 
