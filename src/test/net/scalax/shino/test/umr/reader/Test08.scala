@@ -14,7 +14,7 @@ import slick.util.{ConstArray, ProductWrapper}
 import scala.concurrent.{duration, Await, Future}
 import scala.reflect.ClassTag
 
-class Test09 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
+class Test08 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter {
 
   case class Friend(
       id: Long
