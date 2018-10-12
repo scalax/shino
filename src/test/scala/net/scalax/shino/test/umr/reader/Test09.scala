@@ -80,31 +80,31 @@ class Test09 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
   case class SubFriendTable(
       i1: Rep[String]
     , i2: (Rep[String], Rep[String])
-    , i4: Rep[String]
-    , i5: Rep[String]
-    , i6: Rep[String]
-    , i7: Rep[String]
-    , i8: Rep[String]
-    , i9: Rep[String]
-    , i10: Rep[String]
-    , i11: Rep[String]
-    , i12: Rep[String]
-    , i13: Rep[String]
-    , i14: Rep[String]
-    , i15: Rep[String]
-    , i16: Rep[String]
-    , i17: Rep[String]
-    , i18: Rep[String]
-    , i19: Rep[String]
-    , i20: Rep[String]
-    , i21: Rep[String]
-    , i22: Rep[String]
-    , i23: Rep[String]
-    , i24: Rep[String]
-    , i25: Rep[Int]
-    , i26: Rep[Int]
-    , i27: Rep[Int]
     , i28: Rep[String]
+    , i27: Rep[Int]
+    , i26: Rep[Int]
+    , i25: Rep[Int]
+    , i24: Rep[String]
+    , i23: Rep[String]
+    , i22: Rep[String]
+    , i21: Rep[String]
+    , i20: Rep[String]
+    , i19: Rep[String]
+    , i18: Rep[String]
+    , i17: Rep[String]
+    , i16: Rep[String]
+    , i15: Rep[String]
+    , i14: Rep[String]
+    , i13: Rep[String]
+    , i12: Rep[String]
+    , i11: Rep[String]
+    , i10: Rep[String]
+    , i9: Rep[String]
+    , i8: Rep[String]
+    , i7: Rep[String]
+    , i6: Rep[String]
+    , i5: Rep[String]
+    , i4: Rep[String]
   ) extends CustomTable[SubFriendTable, SubFriend] {
     self =>
     override def customEncodeRef = sEncodeRef.effect(sEncodeRef.singleModel[SubFriendTable](self).compile).toRef
@@ -190,31 +190,31 @@ class Test09 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
             , SubFriendTable(
                 i1 = s.i1
               , i2 = (s.i2, s.i3)
-              , i4 = s.i4
-              , i5 = s.i5
-              , i6 = s.i6
-              , i7 = s.i7
-              , i8 = s.i8
-              , i9 = s.i9
-              , i10 = s.i10
-              , i11 = s.i11
-              , i12 = s.i12
-              , i13 = s.i13
-              , i14 = s.i14
-              , i15 = s.i15
-              , i16 = s.i16
-              , i17 = s.i17
-              , i18 = s.i18
-              , i19 = s.i19
-              , i20 = s.i20
-              , i21 = s.i21
-              , i22 = s.i22
-              , i23 = s.i23
-              , i24 = s.i24
-              , i25 = s.i25
-              , i26 = s.i26
-              , i27 = s.i27
               , i28 = s.i28
+              , i27 = s.i27
+              , i26 = s.i26
+              , i25 = s.i25
+              , i24 = s.i24
+              , i23 = s.i23
+              , i22 = s.i22
+              , i21 = s.i21
+              , i20 = s.i20
+              , i19 = s.i19
+              , i18 = s.i18
+              , i17 = s.i17
+              , i16 = s.i16
+              , i15 = s.i15
+              , i14 = s.i14
+              , i13 = s.i13
+              , i12 = s.i12
+              , i11 = s.i11
+              , i10 = s.i10
+              , i9 = s.i9
+              , i8 = s.i8
+              , i7 = s.i7
+              , i6 = s.i6
+              , i5 = s.i5
+              , i4 = s.i4
             )
           )
       )
