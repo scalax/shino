@@ -108,7 +108,6 @@ class Test09 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
   ) extends CustomTable[SubFriendTable, SubFriend] {
     self =>
     override def customEncodeRef = sEncodeRef.effect(sEncodeRef.singleModel[SubFriendTable](self).compile).toRef
-    override def customPack      = sTarget.effect(sTarget.singleModel[SubFriendTable](self).compile).target
     override def customNode      = sNodeGen.effect(sNodeGen.singleModel[SubFriend](self).compile).toNodeWrap
   }
 
@@ -185,10 +184,10 @@ class Test09 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
     val query1: Query[(Rep[Long], SubFriendTable), (Long, SubFriend), Seq] =
       friendTq.map(
-        s =>
+          s =>
           (
-            s.id,
-            SubFriendTable(
+              s.id
+            , SubFriendTable(
                 i1 = s.i1
               , i2 = (s.i2, s.i3)
               , i4 = s.i4

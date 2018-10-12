@@ -66,7 +66,6 @@ class Test10 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     implicit val i25Shape1 = i25Shape.packedShape
 
     override def customEncodeRef = sEncodeRef.effect(sEncodeRef.singleModel[SubFriendTable[U24, T24, U25, T25]](self).compile).toRef
-    override def customPack      = sTarget.effect(sTarget.singleModel[SubFriendTable[U24, T24, U25, T25]](self).compile).target
     override def customNode      = sNodeGen.effect(sNodeGen.singleModel[SubFriend[U24, U25]](self).compile).toNodeWrap
   }
 
@@ -76,7 +75,6 @@ class Test10 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
   ) extends CustomTable[SubFriendTable[U24, T24, U25, T25], SubFriend[U24, U25]] {
     self =>
     override def customEncodeRef = sEncodeRef.effect(sEncodeRef.singleModel[SubFriendTable[U24, T24, U25, T25]](self).compile).toRef
-    override def customPack      = sTarget.effect(sTarget.singleModel[SubFriendTable[U24, T24, U25, T25]](self).compile).target
     override def customNode      = sNodeGen.effect(sNodeGen.singleModel[SubFriend[U24, U25]](self).compile).toNodeWrap
   }
 
