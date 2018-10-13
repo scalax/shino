@@ -4,11 +4,11 @@ import slick.ast.{BaseTypedType, Node, ProductNode, TypedType}
 import slick.lifted.{AbstractTable, ConstColumn, LiteralColumn, Rep}
 import slick.util.ConstArray
 
-trait ShapePoly extends ShapePoly5
+trait ShapePoly /*extends ShapePoly5*/
 
 object ShapePoly extends ShapePoly
 
-trait ShapePoly5 extends ShapePoly4 {
+/*trait ShapePoly5 extends ShapePoly4 {
 
   implicit final def primitiveShape[T](implicit tm: TypedType[T]): ShinoShape.Aux[ShapePoly, T, T, ConstColumn[T]] = new ShinoShape[ShapePoly, T] {
     override type Data   = T
@@ -72,4 +72,4 @@ trait ShapePoly1 {
     override def toNode(target: Rep[T]): Node                  = target.toNode
   }
 
-}
+}*/

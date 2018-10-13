@@ -8,10 +8,16 @@ import slick.sql.FixedSqlAction
 
 import scala.language.higherKinds
 
-trait ShinoQuery[E, U, C[_]] {
+trait ShinoQuery[E, U, C[_]] extends Rep[U] {
   self =>
 
   def law: Query[E, U, C]
+
+  override def encodeRef(path: Node): ShinoQuery[E, U, C] = {
+    ShinoQuery.fromQuery(law.encodeRef(path))
+  }
+
+  override def toNode: Node = law.toNode
 
   def flatMap[F, T, D[_]](f: E => ShinoQuery[F, T, D]): ShinoQuery[F, T, C] = ShinoQuery.fromQuery(self.law.flatMap(s => f(s).law))
 
@@ -46,7 +52,7 @@ trait ShinoTableQuery[E <: AbstractTable[_]] extends ShinoQuery[E, E#TableElemen
 
   override def law: TableQuery[E]
   lazy val shaped: ShapedValue[E, E#TableElementType] = law.shaped
-  lazy val toNode: Node                               = law.toNode
+  override lazy val toNode: Node                      = law.toNode
   def baseTableRow: E                                 = law.baseTableRow
 
 }
