@@ -4,18 +4,18 @@ import slick.ast.{BaseTypedType, Node, ProductNode, TypedType}
 import slick.lifted.{AbstractTable, ConstColumn, LiteralColumn, Rep}
 import slick.util.ConstArray
 
-trait ShapePoly /*extends ShapePoly5*/
+trait ShapePoly extends ShapePoly5
 
 object ShapePoly extends ShapePoly
 
-/*trait ShapePoly5 extends ShapePoly4 {
+trait ShapePoly5 extends ShapePoly4 {
 
   implicit final def primitiveShape[T](implicit tm: TypedType[T]): ShinoShape.Aux[ShapePoly, T, T, ConstColumn[T]] = new ShinoShape[ShapePoly, T] {
     override type Data   = T
     override type Target = ConstColumn[T]
-    override def wrapRep(value: T): ConstColumn[T]            = LiteralColumn(value)
-    override def encodeRef(value: ConstColumn[T], path: Node) = value.encodeRef(path)
-    override def toNode(value: ConstColumn[T]): Node          = value.toNode
+    override def wrapRep(value: T): ConstColumn[T]                            = LiteralColumn(value)
+    override def encodeRef(value: ConstColumn[T], path: Node): ConstColumn[T] = value.encodeRef(path)
+    override def toNode(value: ConstColumn[T]): Node                          = value.toNode
   }
 
   val unitShapePrototype: ShinoShape.Aux[ShapePoly, Unit, Unit, Unit] = new ShinoShape[ShapePoly, Unit] {
@@ -72,4 +72,4 @@ trait ShapePoly1 {
     override def toNode(target: Rep[T]): Node                  = target.toNode
   }
 
-}*/
+}

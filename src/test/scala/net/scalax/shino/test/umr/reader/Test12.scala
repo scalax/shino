@@ -3,16 +3,17 @@ package net.scalax.shino.test.umr.reader
 import java.util.Locale
 
 import com.github.javafaker.Faker
-import net.scalax.shino.shape.ShinoShape
+import net.scalax.shino.shape.{EncodeTag, RepCol, RepColHelper}
 import net.scalax.shino.umr.SlickResultIO
 import slick.jdbc.H2Profile.api._
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import org.slf4j.LoggerFactory
+import slick.lifted.Shape
 
 import scala.concurrent.{duration, Await, Future}
 
-class Test11 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter with CustomRep {
+class Test12 extends FlatSpec with Matchers with EitherValues with ScalaFutures with BeforeAndAfterAll with BeforeAndAfter with RepColHelper {
 
   case class Friend(
       id: Long
@@ -58,26 +59,35 @@ class Test11 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     , i28: String = "i28"
   )
 
-  case class LawSubFriendTable[R24, U24, T24, R25, U25, T25](id: Rep[Long], i1: Rep[String], i24: R24, i25: R25, i26: Rep[Int], i27: Rep[Int], i28: Rep[String])(
+  case class LawSubFriendTable[R24, U24, T24, R25, U25, T25](
+      id: Rep[Long]
+    , i1: Rep[String]
+    , i24: R24
+    , i25: R25
+    , i26: Rep[Int]
+    , i27: Rep[Int]
+    , i28: Rep[String]
+    , override val tag: EncodeTag = EncodeTag.init
+  )(
       implicit val i24Shape: Shape[FlatShapeLevel, R24, U24, T24]
     , val i25Shape: Shape[FlatShapeLevel, R25, U25, T25]
-  ) extends CustomTable[SubFriendTable[U24, T24, U25, T25], SubFriend[U24, U25]] {
+  ) extends RepCol[LawSubFriendTable[R24, U24, T24, R25, U25, T25], SubFriend[U24, U25]]
+      with SlickResultIO {
     self =>
-    implicit val i24Shape1 = i24Shape.packedShape
-    implicit val i25Shape1 = i25Shape.packedShape
-
-    override def customEncodeRef = sEncodeRef.effect(sEncodeRef.singleModel[SubFriendTable[U24, T24, U25, T25]](self).compile).toRef
-    override def customNode      = sNodeGen.effect(sNodeGen.singleModel[SubFriend[U24, U25]](self).compile).toNodeWrap
+    override def * = //(id, i1, i24, i25, i26, i27, i28).<>(s => SubFriend(s._1, s._2, s._3, s._4, s._5, s._6, s._7), SubFriend.unapply[U24, U25])
+      //ProvenShape.proveShapeOf()
+      shino.effect(shino.singleModel[SubFriend[U24, U25]](self).compile).shape
+    override def copyInstance(tag: EncodeTag): LawSubFriendTable[R24, U24, T24, R25, U25, T25] = self.copy(tag = tag)
   }
 
-  case class SubFriendTable[U24, T24, U25, T25](id: Rep[Long], i1: Rep[String], i24: T24, i25: T25, i26: Rep[Int], i27: Rep[Int], i28: Rep[String])(
+  /*case class SubFriendTable[U24, T24, U25, T25](id: Rep[Long], i1: Rep[String], i24: T24, i25: T25, i26: Rep[Int], i27: Rep[Int], i28: Rep[String])(
       implicit i24Shape: Shape[FlatShapeLevel, T24, U24, T24]
     , i25Shape: Shape[FlatShapeLevel, T25, U25, T25]
   ) extends CustomTable[SubFriendTable[U24, T24, U25, T25], SubFriend[U24, U25]] {
     self =>
     override def customEncodeRef = sEncodeRef.effect(sEncodeRef.singleModel[SubFriendTable[U24, T24, U25, T25]](self).compile).toRef
     override def customNode      = sNodeGen.effect(sNodeGen.singleModel[SubFriend[U24, U25]](self).compile).toNodeWrap
-  }
+  }*/
 
   class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
     def id  = column[Long]("id", O.AutoInc)
@@ -116,7 +126,6 @@ class Test11 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
   }
 
   val friendTq = TableQuery[FriendTable]
-  //val shinoFriendTq = ShinoTableQuery.fromTable(cons => new FriendTable(cons))
 
   val local = new Locale("zh", "CN")
   val faker = new Faker(local)
@@ -125,7 +134,7 @@ class Test11 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  val db = Database.forURL(s"jdbc:h2:mem:reader_test11;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
+  val db = Database.forURL(s"jdbc:h2:mem:reader_test12;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", keepAliveConnection = true)
 
   override def beforeAll = {
     await(db.run(friendTq.schema.create))
@@ -151,11 +160,39 @@ class Test11 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
     val insertIds = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
 
-    val query1 = friendTq.filter(s => (s.id % 2L) === 0L).map(s => s.i7)(ShinoShape.auto)
+    val query1 = friendTq
+      .map(s => s)
+      .map { s =>
+        LawSubFriendTable(id = s.id, i1 = s.i1, i24 = "miaomiaomiao", i25 = s.i25, i26 = s.i26, i27 = s.i27, i28 = s.i28)
+      /*println("44" * 100 + (((s.id, s.i1)).shaped.toNode.children.toSeq.toList))
+        (s.id, s.i1)*/
+      }
+      .map(s => s)
+      .map(s => s)
+      .map(s => s)
+      .map(s => s)
+      .map(s => s)
+      .map(s => s)
+    //.filter(s => (s.id % 2L) === 0L)
 
     val result1 = await(db.run(query1.result))
 
-    result1.toList should be(List("i7"))
+    result1.toList should be(
+        List(
+          SubFriend(id = 1, i24 = "miaomiaomiao", i25 = 111111)
+        , SubFriend(id = 2, i24 = "miaomiaomiao", i25 = 111111)
+        , SubFriend(id = 3, i24 = "miaomiaomiao", i25 = 111111)
+      )
+    )
+
+    /*val query2 = query1.map { s =>
+      println("66" * 100 + (s.i24, s.i25))
+      s.i25
+    }
+
+    val result2 = await(db.run(query2.result))
+
+    result2.toList should be(List(("miaomiaomiao", 111111)))*/
 
   }
 

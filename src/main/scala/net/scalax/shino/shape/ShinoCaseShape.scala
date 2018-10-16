@@ -1,0 +1,114 @@
+package net.scalax.shino.shape
+
+import net.scalax.asuna.core.decoder.DecoderShape
+import net.scalax.asuna.core.formatter.FormatterShape
+import net.scalax.asuna.mapper.decoder.{DecoderContent, DecoderWrapperHelper}
+import net.scalax.asuna.mapper.formatter.{FormatterContent, FormatterWrapperHelper}
+import slick.ast.{MappedScalaType, Node, ProductNode, TypeMapping}
+import slick.util.{ConstArray, ProductWrapper}
+
+import scala.reflect.ClassTag
+
+trait EncodeRefContent[Target] {
+  self =>
+
+  def encode(path: Node, indexMap: Map[String, Int]): Target
+  def map[N](cv: Target => N): EncodeRefContent[N] = new EncodeRefContent[N] {
+    override def encode(path: Node, indexMap: Map[String, Int]) = cv(self.encode(path, indexMap))
+  }
+
+}
+
+trait EncodeRefWrapper[Target, Data] extends DecoderContent[Target, Data] {
+  self =>
+
+  def encode(path: Node, indexMap: Map[String, Int]): Data
+  def map[N](cv: Data => N): EncodeRefContent[N] = new EncodeRefContent[N] {
+    override def encode(path: Node, indexMap: Map[String, Int]) = cv(self.encode(path, indexMap))
+  }
+
+  def toContent: EncodeRefContent[Data] = new EncodeRefContent[Data] {
+    override def encode(path: Node, indexMap: Map[String, Int]): Data = encode(path, indexMap)
+  }
+
+}
+
+trait ShapeWrap[Target, Data] extends FormatterContent[Target, Data] {
+  def toNode(target: Target)(implicit classTag: ClassTag[Data]): NodeWrap
+}
+
+trait Helper1[Rep] {
+  self =>
+  type Data
+  type Target
+
+  def dataFormatterShape: FormatterShape.Aux[Rep, Data, Target, (List[Node], Map[String, Int]), IndexedSeq[Any], List[Any]]
+  def repDecoderShape: DecoderShape.Aux[Target, Target, Target, EncodeRefContent[(Any, Any)], (Any, Any)]
+  def classTag: ClassTag[Data]
+
+  trait ShinoApply[Poly] {
+    def apply: ShinoShape.Aux[Poly, Rep, Data, Target] = {
+      def getNodeWrap(target: Target): NodeWrap = dataShape.effect(target)(dataFormatterShape.packed).toNode(target)(classTag)
+
+      new ShinoShape[Poly, Rep] {
+        override type Data   = self.Data
+        override type Target = self.Target
+        override def wrapRep(value: Rep): Target = dataFormatterShape.wrapRep(value)
+        override def encodeRef(value: Target, path: Node): Target =
+          repShape.effect(value)(repDecoderShape).toContent.encode(path, getNodeWrap(value).indexMap)
+        override def toNode(value: Target): Node = getNodeWrap(value).node
+
+      }
+    }
+  }
+
+  def toLaw[Poly]: ShinoApply[Poly] = new ShinoApply[Poly] {}
+}
+
+object repShape extends DecoderWrapperHelper[EncodeRefContent[(Any, Any)], (Any, Any), EncodeRefWrapper] {
+  override def effect[Source, D, Out](
+      rep: Source
+  )(implicit shape: DecoderShape.Aux[Source, D, Out, EncodeRefContent[(Any, Any)], (Any, Any)]): EncodeRefWrapper[Out, D] = {
+    val shape1  = shape
+    val wrapCol = shape1.wrapRep(rep)
+    val content = shape1.toLawRep(wrapCol, new EncodeRefContent[(Any, Any)] {
+      override def encode(path: Node, indexMap: Map[String, Int]): (Any, Any) = ((), ())
+    })
+    new EncodeRefWrapper[Out, D] {
+      override def encode(path: Node, indexMap: Map[String, Int]): D = {
+        content.map(s => shape1.takeData(wrapCol, s).current).encode(path, indexMap)
+      }
+    }
+  }
+}
+
+case class NodeWrap(node: Node, indexMap: Map[String, Int])
+
+object dataShape extends FormatterWrapperHelper[(List[Node], Map[String, Int]), IndexedSeq[Any], List[Any], ShapeWrap] {
+  override def effect[Source, D, Out](
+      rep: Source
+  )(implicit shape: FormatterShape.Aux[Source, D, Out, (List[Node], Map[String, Int]), IndexedSeq[Any], List[Any]]): ShapeWrap[Out, D] = {
+    val shape1              = shape
+    val wrapCol             = shape1.wrapRep(rep)
+    val (nodeCol, indexCol) = shape1.toLawRep(wrapCol, (List.empty, Map.empty))
+    val productNode         = ProductNode(ConstArray.from(nodeCol))
+
+    def toBase(v: Any): ProductWrapper = {
+      val s = v.asInstanceOf[D]
+      new ProductWrapper(shape1.buildData(s, wrapCol, IndexedSeq.empty))
+    }
+    def toMapped(v: Any): D = {
+      val product = v.asInstanceOf[Product]
+      shape1.takeData(wrapCol, product.productIterator.toList).current
+    }
+
+    val map = indexCol.map { case (key, value) => (key, nodeCol.size - value) }
+
+    new ShapeWrap[Out, D] {
+      override def toNode(out: Out)(implicit classTag: ClassTag[D]): NodeWrap = {
+        val typeNode = TypeMapping(productNode, MappedScalaType.Mapper(toBase, toMapped, None), classTag)
+        NodeWrap(typeNode, map)
+      }
+    }
+  }
+}
