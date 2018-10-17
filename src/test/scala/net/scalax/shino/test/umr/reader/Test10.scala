@@ -60,21 +60,12 @@ class Test10 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
   case class LawSubFriendTable[R24, U24, T24, R25, U25, T25](id: Rep[Long], i1: Rep[String], i24: R24, i25: R25, i26: Rep[Int], i27: Rep[Int], i28: Rep[String])(
       implicit val i24Shape: Shape[FlatShapeLevel, R24, U24, T24]
     , val i25Shape: Shape[FlatShapeLevel, R25, U25, T25]
-  ) extends CustomTable[SubFriendTable[U24, T24, U25, T25], SubFriend[U24, U25]] {
+  ) extends CustomTable[LawSubFriendTable[T24, U24, T24, T25, U25, T25], SubFriend[U24, U25]] {
     self =>
     implicit val i24Shape1 = i24Shape.packedShape
     implicit val i25Shape1 = i25Shape.packedShape
 
-    override def customEncodeRef = sEncodeRef.effect(sEncodeRef.singleModel[SubFriendTable[U24, T24, U25, T25]](self).compile).toRef
-    override def customNode      = sNodeGen.effect(sNodeGen.singleModel[SubFriend[U24, U25]](self).compile).toNodeWrap
-  }
-
-  case class SubFriendTable[U24, T24, U25, T25](id: Rep[Long], i1: Rep[String], i24: T24, i25: T25, i26: Rep[Int], i27: Rep[Int], i28: Rep[String])(
-      implicit i24Shape: Shape[FlatShapeLevel, T24, U24, T24]
-    , i25Shape: Shape[FlatShapeLevel, T25, U25, T25]
-  ) extends CustomTable[SubFriendTable[U24, T24, U25, T25], SubFriend[U24, U25]] {
-    self =>
-    override def customEncodeRef = sEncodeRef.effect(sEncodeRef.singleModel[SubFriendTable[U24, T24, U25, T25]](self).compile).toRef
+    override def customEncodeRef = sEncodeRef.effect(sEncodeRef.singleModel[LawSubFriendTable[T24, U24, T24, T25, U25, T25]](self).compile).toRef
     override def customNode      = sNodeGen.effect(sNodeGen.singleModel[SubFriend[U24, U25]](self).compile).toNodeWrap
   }
 

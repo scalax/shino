@@ -41,11 +41,11 @@ trait CustomRep {
         override def pack(value: Target): Target                               = value
         override def packedShape: Shape[FlatShapeLevel, Target, Model, Target] = subSelf
         override def buildParams(extract: Any => Model): Target                = self.buildParams(extract)
-        override def encodeRef(value: Target, path: Node): Any                 = value.customEncodeRef.customEncodeRef(path, value.customNode.indexMap)
+        override def encodeRef(value: Target, path: Node): Target              = value.customEncodeRef.customEncodeRef(path, value.customNode.indexMap)
         override def toNode(value: Target): Node                               = value.customNode.node
       }
       override def buildParams(extract: Any => Model): Target = ???
-      override def encodeRef(value: CustomTable[Target, Model], path: Node): Any =
+      override def encodeRef(value: CustomTable[Target, Model], path: Node): Target =
         value.customEncodeRef.target.customEncodeRef.customEncodeRef(path, value.customEncodeRef.target.customNode.indexMap)
       override def toNode(value: CustomTable[Target, Model]): Node = value.customEncodeRef.target.customNode.node
     }

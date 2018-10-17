@@ -164,8 +164,6 @@ class Test12 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
       .map(s => s)
       .map { s =>
         LawSubFriendTable(id = s.id, i1 = s.i1, i24 = "miaomiaomiao", i25 = s.i25, i26 = s.i26, i27 = s.i27, i28 = s.i28)
-      /*println("44" * 100 + (((s.id, s.i1)).shaped.toNode.children.toSeq.toList))
-        (s.id, s.i1)*/
       }
       .map(s => s)
       .map(s => s)

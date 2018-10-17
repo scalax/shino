@@ -3,7 +3,6 @@ package net.scalax.shino.test.umr.reader
 import java.util.Locale
 
 import com.github.javafaker.Faker
-import net.scalax.shino.shape.ShinoShape
 import net.scalax.shino.umr.SlickResultIO
 import slick.jdbc.H2Profile.api._
 import org.scalatest._
@@ -151,7 +150,7 @@ class Test11 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
     val insertIds = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
 
-    val query1 = friendTq.filter(s => (s.id % 2L) === 0L).map(s => s.i7)(ShinoShape.auto)
+    val query1 = friendTq.filter(s => (s.id % 2L) === 0L).map(s => s.i7)
 
     val result1 = await(db.run(query1.result))
 

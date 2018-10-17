@@ -183,41 +183,44 @@ class Test09 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     val insertIds = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
 
     val query1: Query[(Rep[Long], SubFriendTable), (Long, SubFriend), Seq] =
-      friendTq.map(
-          s =>
-          (
-              s.id
-            , SubFriendTable(
-                i1 = s.i1
-              , i2 = (s.i2, s.i3)
-              , i28 = s.i28
-              , i27 = s.i27
-              , i26 = s.i26
-              , i25 = s.i25
-              , i24 = s.i24
-              , i23 = s.i23
-              , i22 = s.i22
-              , i21 = s.i21
-              , i20 = s.i20
-              , i19 = s.i19
-              , i18 = s.i18
-              , i17 = s.i17
-              , i16 = s.i16
-              , i15 = s.i15
-              , i14 = s.i14
-              , i13 = s.i13
-              , i12 = s.i12
-              , i11 = s.i11
-              , i10 = s.i10
-              , i9 = s.i9
-              , i8 = s.i8
-              , i7 = s.i7
-              , i6 = s.i6
-              , i5 = s.i5
-              , i4 = s.i4
-            )
-          )
-      )
+      friendTq.map { s =>
+        val abc = SubFriendTable(
+            i1 = s.i1
+          , i2 = (s.i2, s.i3)
+          , i28 = s.i28
+          , i27 = s.i27
+          , i26 = s.i26
+          , i25 = s.i25
+          , i24 = s.i24
+          , i23 = s.i23
+          , i22 = s.i22
+          , i21 = s.i21
+          , i20 = s.i20
+          , i19 = s.i19
+          , i18 = s.i18
+          , i17 = s.i17
+          , i16 = s.i16
+          , i15 = s.i15
+          , i14 = s.i14
+          , i13 = s.i13
+          , i12 = s.i12
+          , i11 = s.i11
+          , i10 = s.i10
+          , i9 = s.i9
+          , i8 = s.i8
+          , i7 = s.i7
+          , i6 = s.i6
+          , i5 = s.i5
+          , i4 = s.i4
+        )
+
+        abc.productIterator
+
+        (
+            s.id
+          , abc
+        )
+      }
 
     val result1 = await(db.run(query1.result))
 

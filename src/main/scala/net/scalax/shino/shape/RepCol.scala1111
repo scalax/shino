@@ -33,15 +33,15 @@ trait RepCol[Col <: RepCol[Col, Model], Model] extends Rep[Model] {
     def dealWithShape[T <: FlatShapeLevel, S, D, R](rep1: Any, shape1: Shape[T, S, D, R]): Node = {
       val packShape: Shape[T, R, D, R] = shape1.packedShape
       val packValue: R                 = shape1.pack(rep1.asInstanceOf[S])
-      println("33" * 100 + packValue.asInstanceOf[MappedProjection[_, _]].toNode.children.toSeq.toList.head.children.toSeq.toList)
+      //println("33" * 100 + packValue.asInstanceOf[MappedProjection[_, _]].toNode.children.toSeq.toList.head.children.toSeq.toList)
       val tag1 = tag
       tag1 match {
         case _: EncodeBaseTag =>
-          println("22" * 100 + *.toNode)
+          //println("22" * 100 + *.toNode)
           /*packShape.toNode(packValue)*/
           *.toNode
         case tag2: EncodeRefTag =>
-          println("11" * 100 + packShape.toNode(packShape.encodeRef(packValue, tag2.path).asInstanceOf[R]))
+          //println("11" * 100 + packShape.toNode(packShape.encodeRef(packValue, tag2.path).asInstanceOf[R]))
           packShape.toNode(packShape.encodeRef(packValue, tag2.path).asInstanceOf[R])
       }
     }
