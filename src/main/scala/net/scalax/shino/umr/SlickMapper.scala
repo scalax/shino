@@ -6,7 +6,11 @@ import net.scalax.asuna.core.formatter.FormatterShape
 import net.scalax.asuna.mapper.decoder.{DecoderContent, DecoderWrapperHelper}
 import net.scalax.asuna.mapper.encoder.{EncoderContent, EncoderWrapperHelper}
 import net.scalax.asuna.mapper.formatter.{FormatterContent, FormatterWrapperHelper}
+import slick.SlickException
+import slick.ast.{ElementSymbol, Node, ProductNode, Select}
 import slick.lifted.{FlatShapeLevel, MappedProjection, Shape, ShapedValue}
+import slick.util.{ConstArray, ProductWrapper}
+
 import scala.reflect.ClassTag
 
 trait ShinoFormatterWrapper[RepOut, DataType] extends FormatterContent[RepOut, DataType] {
@@ -23,32 +27,50 @@ trait ShinoEncoderWrapper[RepOut, DataType] extends EncoderContent[RepOut, DataT
 
 trait SlickResultIO {
 
-  private val unitInstance = new SlickShapeValueWrap[(Unit, Unit)] {
-    override type Rep   = (Unit, Unit)
-    override type Level = FlatShapeLevel
-    override val rep   = ((), ())
-    override val shape = Shape.tuple2Shape[FlatShapeLevel, Unit, Unit, Unit, Unit, Unit, Unit](Shape.unitShape[FlatShapeLevel], Shape.unitShape[FlatShapeLevel])
-  }.asInstanceOf[SlickShapeValueWrap[(Any, Any)]]
+  private def transWrapperList(reps: List[SlickShapeValueWrap]): ShapedValue[List[Any], Product] = {
+    ShapedValue(
+        reps.map(s => s.rep: Any)
+      , new Shape[FlatShapeLevel, List[Any], Product, List[Any]] { subSelf =>
+        override def pack(value: List[Any]): List[Any] = value
 
-  object shino extends FormatterWrapperHelper[SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any), ShinoFormatterWrapper] {
+        override def packedShape = subSelf
+
+        override def buildParams(extract: Any => Product): List[Any] = throw new SlickException("Shape does not have the same Mixed and Unpacked type")
+
+        override def encodeRef(value: List[Any], path: Node): List[Any] =
+          value.zipWithIndex.zip(reps.map(s => s.shape.asInstanceOf[Shape[FlatShapeLevel, Any, Any, Any]])).map {
+            case ((item, index), eachShape) =>
+              eachShape.encodeRef(item, Select(path, ElementSymbol(index + 1)))
+          }
+
+        override def toNode(value: List[Any]): Node = {
+          val nodes =
+            value.zip(reps.map(s => s.shape.asInstanceOf[Shape[FlatShapeLevel, Any, Any, Any]])).map { case (item, eachShape) => eachShape.toNode(item) }
+          ProductNode(ConstArray.from(nodes))
+        }
+      }
+    )
+  }
+
+  object shino extends FormatterWrapperHelper[List[SlickShapeValueWrap], IndexedSeq[Any], List[Any], ShinoFormatterWrapper] {
     override def effect[Rep, D, Out](
         rep: Rep
-    )(implicit shape: FormatterShape.Aux[Rep, D, Out, SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)]): ShinoFormatterWrapper[Out, D] = {
+    )(implicit shape: FormatterShape.Aux[Rep, D, Out, List[SlickShapeValueWrap], IndexedSeq[Any], List[Any]]): ShinoFormatterWrapper[Out, D] = {
       val shape1  = shape
       val wrapCol = shape1.wrapRep(rep)
       val reps = shape1.toLawRep(
           wrapCol
-        , unitInstance
+        , List.empty
       )
       new ShinoFormatterWrapper[Out, D] {
         override def shape(implicit classTag: ClassTag[D]): MappedProjection[D, Any] = {
-          ShapedValue(reps.rep, reps.shape)
+          transWrapperList(reps)
             .<>(
-                f = { (t: (Any, Any)) =>
-                shape1.takeData(wrapCol, t).current
+                f = { t: Product =>
+                shape1.takeData(wrapCol, t.productIterator.toList).current
               }
               , g = { r: D =>
-                Option(shape1.buildData(r, wrapCol, ((), ())))
+                Option(new ProductWrapper(shape1.buildData(r, wrapCol, IndexedSeq.empty)))
               }
             )(classTag)
             .asInstanceOf[MappedProjection[D, Any]]
@@ -57,22 +79,22 @@ trait SlickResultIO {
     }
   }
 
-  object shinoOutput extends DecoderWrapperHelper[SlickShapeValueWrap[(Any, Any)], (Any, Any), ShinoDecoderWrapper] {
+  object shinoOutput extends DecoderWrapperHelper[List[SlickShapeValueWrap], List[Any], ShinoDecoderWrapper] {
     override def effect[Rep, D, Out](
         rep: Rep
-    )(implicit shape: DecoderShape.Aux[Rep, D, Out, SlickShapeValueWrap[(Any, Any)], (Any, Any)]): ShinoDecoderWrapper[Out, D] = {
+    )(implicit shape: DecoderShape.Aux[Rep, D, Out, List[SlickShapeValueWrap], List[Any]]): ShinoDecoderWrapper[Out, D] = {
       val shape1  = shape
       val wrapCol = shape1.wrapRep(rep)
       val reps = shape1.toLawRep(
           wrapCol
-        , unitInstance
+        , List.empty
       )
       new ShinoDecoderWrapper[Out, D] {
         override def shape(implicit classTag: ClassTag[D]): MappedProjection[D, Any] = {
-          ShapedValue(reps.rep, reps.shape)
+          transWrapperList(reps)
             .<>(
-                { (t: (Any, Any)) =>
-                shape1.takeData(wrapCol, t).current
+                { t: Product =>
+                shape1.takeData(wrapCol, t.productIterator.toList).current
               }
               , { r: D =>
                 Option.empty
@@ -84,25 +106,26 @@ trait SlickResultIO {
     }
   }
 
-  object shinoInput extends EncoderWrapperHelper[SlickShapeValueWrap[(Any, Any)], (Any, Any), ShinoEncoderWrapper] {
+  object shinoInput extends EncoderWrapperHelper[List[SlickShapeValueWrap], IndexedSeq[Any], ShinoEncoderWrapper] {
     override def effect[Rep, D, Out](
         rep: Rep
-    )(implicit shape: EncoderShape.Aux[Rep, D, Out, SlickShapeValueWrap[(Any, Any)], (Any, Any)]): ShinoEncoderWrapper[Out, D] = {
+    )(implicit shape: EncoderShape.Aux[Rep, D, Out, List[SlickShapeValueWrap], IndexedSeq[Any]]): ShinoEncoderWrapper[Out, D] = {
       val shape1  = shape
       val wrapCol = shape1.wrapRep(rep)
       val reps = shape1.toLawRep(
           wrapCol
-        , unitInstance
+        , List.empty
       )
       new ShinoEncoderWrapper[Out, D] {
         override def shape(implicit classTag: ClassTag[D]): MappedProjection[D, Any] = {
-          ShapedValue(reps.rep, reps.shape)
+          transWrapperList(reps)
             .<>[D](
-                { (t: (Any, Any)) =>
+                { (t: Product) =>
                 throw new NoSuchElementException("Write only shape can not read data from database")
               }
               , { r: D =>
-                Option(shape1.buildData(r, wrapCol, ((), ())))
+                Option(new ProductWrapper(shape1.buildData(r, wrapCol, IndexedSeq.empty)))
+
               }
             )
             .asInstanceOf[MappedProjection[D, Any]]
@@ -111,14 +134,14 @@ trait SlickResultIO {
     }
 
     trait Setter[Data] {
-      def to(data: Data): EncoderShapeValue[Unit, SlickShapeValueWrap[(Any, Any)], (Any, Any)]
+      def to(data: Data): EncoderShapeValue[Unit, List[SlickShapeValueWrap], IndexedSeq[Any]]
     }
 
-    def set[Rep, D, Target](rep: Rep)(implicit encoderShape: EncoderShape.Aux[Rep, D, Target, SlickShapeValueWrap[(Any, Any)], (Any, Any)]): Setter[D] = {
+    def set[Rep, D, Target](rep: Rep)(implicit encoderShape: EncoderShape.Aux[Rep, D, Target, List[SlickShapeValueWrap], IndexedSeq[Any]]): Setter[D] = {
       new Setter[D] {
-        def to(data: D): EncoderShapeValue[Unit, SlickShapeValueWrap[(Any, Any)], (Any, Any)] = {
+        def to(data: D): EncoderShapeValue[Unit, List[SlickShapeValueWrap], IndexedSeq[Any]] = {
           val rep1 = rep
-          new EncoderShapeValue[D, SlickShapeValueWrap[(Any, Any)], (Any, Any)] {
+          new EncoderShapeValue[D, List[SlickShapeValueWrap], IndexedSeq[Any]] {
             override type RepType = Target
             override val rep   = encoderShape.wrapRep(rep1)
             override val shape = encoderShape.packed
@@ -130,8 +153,8 @@ trait SlickResultIO {
     }
 
     def sequenceShapeValue(
-        v: EncoderShapeValue[Unit, SlickShapeValueWrap[(Any, Any)], (Any, Any)]*
-    ): EncoderShapeValue[Unit, SlickShapeValueWrap[(Any, Any)], (Any, Any)] = {
+        v: EncoderShapeValue[Unit, List[SlickShapeValueWrap], IndexedSeq[Any]]*
+    ): EncoderShapeValue[Unit, List[SlickShapeValueWrap], IndexedSeq[Any]] = {
       val list = v.toList
       shaped(list).emap { i: Unit =>
         list.map(_ => i)
@@ -139,8 +162,8 @@ trait SlickResultIO {
     }
 
     def sequenceShapeValueCol(
-        v: List[EncoderShapeValue[Unit, SlickShapeValueWrap[(Any, Any)], (Any, Any)]]
-    ): EncoderShapeValue[Unit, SlickShapeValueWrap[(Any, Any)], (Any, Any)] = {
+        v: List[EncoderShapeValue[Unit, List[SlickShapeValueWrap], IndexedSeq[Any]]]
+    ): EncoderShapeValue[Unit, List[SlickShapeValueWrap], IndexedSeq[Any]] = {
       shaped(v).emap { i: Unit =>
         v.map(_ => i)
       }
@@ -149,38 +172,38 @@ trait SlickResultIO {
 
   implicit def shinoWrapperRepImplicit[R, D, T, L <: FlatShapeLevel](
       implicit shape: Shape[L, R, D, T]
-  ): FormatterShape.Aux[R, D, SlickShapeValueWrap[D], SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)] = {
-    new FormatterShape[R, SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)] {
-      override type Target = SlickShapeValueWrap[D]
+  ): FormatterShape.Aux[R, D, SlickShapeValueWrapImpl[D], List[SlickShapeValueWrap], IndexedSeq[Any], List[Any]] = {
+    new FormatterShape[R, List[SlickShapeValueWrap], IndexedSeq[Any], List[Any]] {
+      override type Target = SlickShapeValueWrapImpl[D]
       override type Data   = D
-      override def wrapRep(base: R): SlickShapeValueWrap[D] = {
+      override def wrapRep(base: R): SlickShapeValueWrapImpl[D] = {
         val shape1 = shape
-        new SlickShapeValueWrap[D] {
+        new SlickShapeValueWrapImpl[D] {
           override type Rep   = T
           override type Level = L
           override val shape = shape1.packedShape
           override val rep   = shape1.pack(base)
         }
       }
-      override def toLawRep(base: SlickShapeValueWrap[D], oldRep: SlickShapeValueWrap[(Any, Any)]): SlickShapeValueWrap[(Any, Any)] =
-        base.zip(oldRep).asInstanceOf[SlickShapeValueWrap[(Any, Any)]]
-      override def takeData(oldData: SlickShapeValueWrap[D], rep: (Any, Any)): SplitData[D, (Any, Any)] =
-        SplitData(current = rep._1.asInstanceOf[D], left = rep._2.asInstanceOf[(Any, Any)])
-      override def buildData(data: D, rep: SlickShapeValueWrap[D], oldData: (Any, Any)): (Any, Any) = (data, oldData)
+      override def toLawRep(base: SlickShapeValueWrapImpl[D], oldRep: List[SlickShapeValueWrap]): List[SlickShapeValueWrap] =
+        base :: oldRep
+      override def takeData(oldData: SlickShapeValueWrapImpl[D], rep: List[Any]): SplitData[D, List[Any]] =
+        SplitData(current = rep.head.asInstanceOf[D], left = rep.tail)
+      override def buildData(data: D, rep: SlickShapeValueWrapImpl[D], oldData: IndexedSeq[Any]): IndexedSeq[Any] = data +: oldData
     }
   }
 
   implicit def shinoSlickShapeValueWrapImplicit[D]
-    : FormatterShape.Aux[SlickShapeValueWrap[D], D, SlickShapeValueWrap[D], SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)] = {
-    new FormatterShape[SlickShapeValueWrap[D], SlickShapeValueWrap[(Any, Any)], (Any, Any), (Any, Any)] {
-      override type Target = SlickShapeValueWrap[D]
+    : FormatterShape.Aux[SlickShapeValueWrapImpl[D], D, SlickShapeValueWrapImpl[D], List[SlickShapeValueWrap], IndexedSeq[Any], List[Any]] = {
+    new FormatterShape[SlickShapeValueWrapImpl[D], List[SlickShapeValueWrap], IndexedSeq[Any], List[Any]] {
+      override type Target = SlickShapeValueWrapImpl[D]
       override type Data   = D
-      override def wrapRep(base: SlickShapeValueWrap[D]): SlickShapeValueWrap[D] = base
-      override def toLawRep(base: SlickShapeValueWrap[D], oldRep: SlickShapeValueWrap[(Any, Any)]): SlickShapeValueWrap[(Any, Any)] =
-        base.zip(oldRep).asInstanceOf[SlickShapeValueWrap[(Any, Any)]]
-      override def takeData(oldData: SlickShapeValueWrap[D], rep: (Any, Any)): SplitData[D, (Any, Any)] =
-        SplitData(current = rep._1.asInstanceOf[D], left = rep._2.asInstanceOf[(Any, Any)])
-      override def buildData(data: D, rep: SlickShapeValueWrap[D], oldData: (Any, Any)): (Any, Any) = (data, oldData)
+      override def wrapRep(base: SlickShapeValueWrapImpl[D]): SlickShapeValueWrapImpl[D] = base
+      override def toLawRep(base: SlickShapeValueWrapImpl[D], oldRep: List[SlickShapeValueWrap]): List[SlickShapeValueWrap] =
+        base :: oldRep
+      override def takeData(oldData: SlickShapeValueWrapImpl[D], rep: List[Any]): SplitData[D, List[Any]] =
+        SplitData(current = rep.head.asInstanceOf[D], left = rep.tail)
+      override def buildData(data: D, rep: SlickShapeValueWrapImpl[D], oldData: IndexedSeq[Any]): IndexedSeq[Any] = data +: oldData
     }
   }
 
