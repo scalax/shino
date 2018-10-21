@@ -16,6 +16,10 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
   case class Friend(id: Long, name: String, nick: String, age: Int)
   case class FriendSetter(name: String, nick: String)
 
+  case class FriendSetterTest(name: String, age: Int)
+  case class NotToUse(age: Int)
+  case class NickModel(nick: String)
+
   class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
     def id   = column[Long]("id", O.AutoInc)
     def name = column[String]("name")
@@ -25,6 +29,9 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
 
     def setter = shino.effect(shino.singleModel[FriendSetter](this).compile).shape
+
+    def setter2 = shinoInput.effect(shinoInput.unusedModel[NickModel, FriendSetterTest, NotToUse](this).compile).shape
+
   }
 
   val friendTq = TableQuery[FriendTable]
@@ -61,6 +68,10 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
 
     val insertIds    = await(db.run(DBIO.sequence(List(friend1DBIO, friend2DBIO, friend3DBIO))))
     val updateAction = await(db.run(friendTq.filter(s => (s.id % 2L) === 1L).map(_.setter).update(FriendSetter(name = "namenamename", nick = "miaomiaomiao"))))
+
+    friendTq.map(_.setter2).update(NickModel("1111"), FriendSetterTest("2222", 3333)).statements.toList should be(
+        friendTq.map(s => (s.nick, s.name)).update(("1111", "2222")).statements.toList
+    )
 
     val result = await(db.run(friendTq.sortBy(_.id).result))
 
