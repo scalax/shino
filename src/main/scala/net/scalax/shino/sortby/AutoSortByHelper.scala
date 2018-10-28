@@ -23,7 +23,7 @@ trait AutoSortByHelper {
       override type Target = SortByContent
       override type Data   = OrderingWrap[D]
 
-      override def wrapRep(base: RepColumnContent[Placeholder[OrderingWrap[D]], OrderingWrap[D]]): SortByContent =
+      override def wrapRep(base: => RepColumnContent[Placeholder[OrderingWrap[D]], OrderingWrap[D]]): SortByContent =
         SortByContent(base.columnInfo.modelColumnName, cv1(sortByColumnGenerator(base.columnInfo.modelColumnName, typedType)))
 
       override def toLawRep(base: SortByContent, oldRep: Map[String, SOrdered]): Map[String, SOrdered] = oldRep + ((base.key, base.orderPro))

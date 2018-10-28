@@ -67,7 +67,7 @@ trait SortByMapper {
     new EncoderShape[RepColumnContent[D, NullsOrdering], Map[String, SOrdered], Map[String, (SOrdered, NullsOrdering)]] {
       override type Target = SortByContent
       override type Data   = NullsOrdering
-      override def wrapRep(base: RepColumnContent[D, NullsOrdering]): SortByContent                    = SortByContent(base.columnInfo.modelColumnName, orderMap(base.rep))
+      override def wrapRep(base: => RepColumnContent[D, NullsOrdering]): SortByContent                 = SortByContent(base.columnInfo.modelColumnName, orderMap(base.rep))
       override def toLawRep(base: SortByContent, oldRep: Map[String, SOrdered]): Map[String, SOrdered] = oldRep + ((base.key, base.orderPro))
       override def buildData(
           data: NullsOrdering
@@ -82,7 +82,7 @@ trait SortByMapper {
     new EncoderShape[SortByContent, Map[String, SOrdered], Map[String, (SOrdered, NullsOrdering)]] {
       override type Target = SortByContent
       override type Data   = NullsOrdering
-      override def wrapRep(base: SortByContent): SortByContent                                         = base
+      override def wrapRep(base: => SortByContent): SortByContent                                      = base
       override def toLawRep(base: SortByContent, oldRep: Map[String, SOrdered]): Map[String, SOrdered] = oldRep + ((base.key, base.orderPro))
       override def buildData(
           data: NullsOrdering

@@ -18,7 +18,7 @@ trait ColumnHelper {
     new FormatterShape[RepColumnContent[Placeholder[D], D], List[SlickShapeValueWrap], IndexedSeq[Any], List[Any]] {
       override type Target = SlickShapeValueWrapImpl[D]
       override type Data   = D
-      override def wrapRep(base: RepColumnContent[Placeholder[D], D]): SlickShapeValueWrapImpl[D] = {
+      override def wrapRep(base: => RepColumnContent[Placeholder[D], D]): SlickShapeValueWrapImpl[D] = {
         val shape1 = shape
         type Rep1[R] = slick.lifted.Rep[R]
 

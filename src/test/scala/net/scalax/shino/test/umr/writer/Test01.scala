@@ -70,7 +70,7 @@ class Test01 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     val updateAction = await(db.run(friendTq.filter(s => (s.id % 2L) === 1L).map(_.setter).update(FriendSetter(name = "namenamename", nick = "miaomiaomiao"))))
 
     friendTq.map(_.setter2).update(NickModel("1111"), FriendSetterTest("2222", 3333)).statements.toList should be(
-        friendTq.map(s => (s.nick, s.name)).update(("1111", "2222")).statements.toList
+        friendTq.map(s => (s.name, s.nick)).update(("1111", "2222")).statements.toList
     )
 
     val result = await(db.run(friendTq.sortBy(_.id).result))

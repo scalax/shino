@@ -176,7 +176,7 @@ trait SlickResultIO {
     new FormatterShape[R, List[SlickShapeValueWrap], IndexedSeq[Any], List[Any]] {
       override type Target = SlickShapeValueWrapImpl[D]
       override type Data   = D
-      override def wrapRep(base: R): SlickShapeValueWrapImpl[D] = {
+      override def wrapRep(base: => R): SlickShapeValueWrapImpl[D] = {
         val shape1 = shape
         new SlickShapeValueWrapImpl[D] {
           override type Rep   = T
@@ -198,7 +198,7 @@ trait SlickResultIO {
     new FormatterShape[SlickShapeValueWrapImpl[D], List[SlickShapeValueWrap], IndexedSeq[Any], List[Any]] {
       override type Target = SlickShapeValueWrapImpl[D]
       override type Data   = D
-      override def wrapRep(base: SlickShapeValueWrapImpl[D]): SlickShapeValueWrapImpl[D] = base
+      override def wrapRep(base: => SlickShapeValueWrapImpl[D]): SlickShapeValueWrapImpl[D] = base
       override def toLawRep(base: SlickShapeValueWrapImpl[D], oldRep: List[SlickShapeValueWrap]): List[SlickShapeValueWrap] =
         base :: oldRep
       override def takeData(oldData: SlickShapeValueWrapImpl[D], rep: List[Any]): SplitData[D, List[Any]] =

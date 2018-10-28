@@ -103,7 +103,7 @@ trait CustomRep {
       override type Target = EncodeRefConvert[T]
       override type Data   = T
 
-      override def wrapRep(base: RepColumnContent[R, T]): EncodeRefConvert[T] = new EncodeRefConvert[T] {
+      override def wrapRep(base: => RepColumnContent[R, T]): EncodeRefConvert[T] = new EncodeRefConvert[T] {
         override def customEncodeRef(path: Node, map: Map[String, Int]): T =
           shape.encodeRef(base.rep, Select(path, ElementSymbol(map(base.columnInfo.modelColumnName)))).asInstanceOf[T]
         override def target: T = shape.pack(base.rep)
@@ -167,7 +167,7 @@ trait CustomRep {
     new FormatterShape[RepColumnContent[R, D], (List[ColumnWrap], Int), IndexedSeq[Any], List[Any]] {
       override type Target = Int => ColumnWrap
       override type Data   = D
-      override def wrapRep(base: RepColumnContent[R, D]): Int => ColumnWrap = {
+      override def wrapRep(base: => RepColumnContent[R, D]): Int => ColumnWrap = {
         val shape1 = shape
 
         { index: Int =>
