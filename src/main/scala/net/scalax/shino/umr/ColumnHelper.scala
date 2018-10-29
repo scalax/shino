@@ -26,7 +26,7 @@ trait ColumnHelper {
           override type Rep   = Rep1[D]
           override type Level = T
           override val shape = shape1
-          override val rep   = columnGenerator(base.columnInfo.modelColumnName, typedType)
+          override val rep   = columnGenerator(base.columnInfo.tableColumnSymbol.name, typedType)
         }
       }
       override def toLawRep(base: SlickShapeValueWrapImpl[D], oldRep: List[SlickShapeValueWrap]): List[SlickShapeValueWrap] =

@@ -54,7 +54,7 @@ trait RmuOutputHelper {
       override def wrapRep(
           base: => RepColumnContent[R, D]
       ): (String, DecoderShapeValue[Json, List[SlickShapeValueWrap], List[Any]]) = {
-        (base.columnInfo.modelColumnName, shinoOutput.shaped(base.rep).dmap(d => encoder(d)))
+        (base.columnInfo.tableColumnSymbol.name, shinoOutput.shaped(base.rep).dmap(d => encoder(d)))
       }
 
       override def toLawRep(

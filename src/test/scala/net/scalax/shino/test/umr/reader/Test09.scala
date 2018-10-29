@@ -107,8 +107,10 @@ class Test09 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     , i4: Rep[String]
   ) extends CustomTable[SubFriendTable, SubFriend] {
     self =>
+
     override def customEncodeRef = sEncodeRef.effect(sEncodeRef.singleModel[SubFriendTable](self).compile).toRef
     override def customNode      = sNodeGen.effect(sNodeGen.singleModel[SubFriend](self).compile).toNodeWrap
+
   }
 
   class FriendTable(tag: slick.lifted.Tag) extends Table[Friend](tag, "firend") with SlickResultIO {
@@ -213,8 +215,6 @@ class Test09 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
           , i5 = s.i5
           , i4 = s.i4
         )
-
-        abc.productIterator
 
         (
             s.id

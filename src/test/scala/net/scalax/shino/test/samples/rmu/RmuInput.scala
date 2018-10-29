@@ -54,7 +54,10 @@ trait RmuInputHelper {
       override def wrapRep(
           base: => RepColumnContent[R, D]
       ): (String, EncoderShapeValue[JsonObject, List[SlickShapeValueWrap], IndexedSeq[Any]]) = {
-        (base.columnInfo.modelColumnName, shinoInput.shaped(base.rep).emap[JsonObject](d => d(base.columnInfo.modelColumnName).get.as(decoder).right.get))
+        (
+            base.columnInfo.tableColumnSymbol.name
+          , shinoInput.shaped(base.rep).emap[JsonObject](d => d(base.columnInfo.tableColumnSymbol.name).get.as(decoder).right.get)
+        )
       }
 
       override def toLawRep(

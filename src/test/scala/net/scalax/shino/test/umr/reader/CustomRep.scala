@@ -105,7 +105,7 @@ trait CustomRep {
 
       override def wrapRep(base: => RepColumnContent[R, T]): EncodeRefConvert[T] = new EncodeRefConvert[T] {
         override def customEncodeRef(path: Node, map: Map[String, Int]): T =
-          shape.encodeRef(base.rep, Select(path, ElementSymbol(map(base.columnInfo.modelColumnName)))).asInstanceOf[T]
+          shape.encodeRef(base.rep, Select(path, ElementSymbol(map(base.columnInfo.tableColumnSymbol.name)))).asInstanceOf[T]
         override def target: T = shape.pack(base.rep)
       }
 
@@ -177,7 +177,7 @@ trait CustomRep {
             override type Level    = L
             override val rep       = shape1.pack(base.rep)
             override val shape     = shape1.packedShape
-            override val indexInfo = (base.columnInfo.modelColumnName, index)
+            override val indexInfo = (base.columnInfo.tableColumnSymbol.name, index)
           }
         }
       }
