@@ -22,6 +22,7 @@ class Test04 extends FlatSpec with Matchers with EitherValues with ScalaFutures 
     def age  = column[Int]("age")
 
     override def * = shino.effect(shino.singleModel[Friend](this).compile).shape
+
   }
 
   val friendTq = TableQuery[FriendTable]
