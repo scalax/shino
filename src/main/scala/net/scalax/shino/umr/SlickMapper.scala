@@ -58,7 +58,7 @@ trait SlickResultIO {
     )(implicit shape: FormatterShape.Aux[Rep, D, Out, List[SlickShapeValueWrap], IndexedSeq[Any], List[Any]]): ShinoFormatterWrapper[Out, D] = {
       val shape1  = shape
       val wrapCol = shape1.wrapRep(rep)
-      val reps = shape1.toLawRep(
+      val reps = shape1.buildRep(
           wrapCol
         , List.empty
       )
@@ -85,7 +85,7 @@ trait SlickResultIO {
     )(implicit shape: DecoderShape.Aux[Rep, D, Out, List[SlickShapeValueWrap], List[Any]]): ShinoDecoderWrapper[Out, D] = {
       val shape1  = shape
       val wrapCol = shape1.wrapRep(rep)
-      val reps = shape1.toLawRep(
+      val reps = shape1.buildRep(
           wrapCol
         , List.empty
       )
@@ -112,7 +112,7 @@ trait SlickResultIO {
     )(implicit shape: EncoderShape.Aux[Rep, D, Out, List[SlickShapeValueWrap], IndexedSeq[Any]]): ShinoEncoderWrapper[Out, D] = {
       val shape1  = shape
       val wrapCol = shape1.wrapRep(rep)
-      val reps = shape1.toLawRep(
+      val reps = shape1.buildRep(
           wrapCol
         , List.empty
       )
@@ -185,7 +185,7 @@ trait SlickResultIO {
           override val rep   = shape1.pack(base)
         }
       }
-      override def toLawRep(base: SlickShapeValueWrapImpl[D], oldRep: List[SlickShapeValueWrap]): List[SlickShapeValueWrap] =
+      override def buildRep(base: SlickShapeValueWrapImpl[D], oldRep: List[SlickShapeValueWrap]): List[SlickShapeValueWrap] =
         base :: oldRep
       override def takeData(oldData: SlickShapeValueWrapImpl[D], rep: List[Any]): SplitData[D, List[Any]] =
         SplitData(current = rep.head.asInstanceOf[D], left = rep.tail)
@@ -199,7 +199,7 @@ trait SlickResultIO {
       override type Target = SlickShapeValueWrapImpl[D]
       override type Data   = D
       override def wrapRep(base: => SlickShapeValueWrapImpl[D]): SlickShapeValueWrapImpl[D] = base
-      override def toLawRep(base: SlickShapeValueWrapImpl[D], oldRep: List[SlickShapeValueWrap]): List[SlickShapeValueWrap] =
+      override def buildRep(base: SlickShapeValueWrapImpl[D], oldRep: List[SlickShapeValueWrap]): List[SlickShapeValueWrap] =
         base :: oldRep
       override def takeData(oldData: SlickShapeValueWrapImpl[D], rep: List[Any]): SplitData[D, List[Any]] =
         SplitData(current = rep.head.asInstanceOf[D], left = rep.tail)

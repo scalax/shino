@@ -29,7 +29,7 @@ trait ColumnHelper {
           override val rep   = columnGenerator(base.columnInfo.tableColumnSymbol.name, typedType)
         }
       }
-      override def toLawRep(base: SlickShapeValueWrapImpl[D], oldRep: List[SlickShapeValueWrap]): List[SlickShapeValueWrap] =
+      override def buildRep(base: SlickShapeValueWrapImpl[D], oldRep: List[SlickShapeValueWrap]): List[SlickShapeValueWrap] =
         base :: oldRep
       override def takeData(oldData: SlickShapeValueWrapImpl[D], rep: List[Any]): SplitData[D, List[Any]] =
         SplitData(current = rep.head.asInstanceOf[D], left = rep.tail)

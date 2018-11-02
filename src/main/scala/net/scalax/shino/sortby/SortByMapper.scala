@@ -69,7 +69,7 @@ trait SortByMapper {
       override type Data   = NullsOrdering
       override def wrapRep(base: => RepColumnContent[D, NullsOrdering]): SortByContent =
         SortByContent(base.columnInfo.tableColumnSymbol.name, orderMap(base.rep))
-      override def toLawRep(base: SortByContent, oldRep: Map[String, SOrdered]): Map[String, SOrdered] = oldRep + ((base.key, base.orderPro))
+      override def buildRep(base: SortByContent, oldRep: Map[String, SOrdered]): Map[String, SOrdered] = oldRep + ((base.key, base.orderPro))
       override def buildData(
           data: NullsOrdering
         , rep: SortByContent
@@ -84,7 +84,7 @@ trait SortByMapper {
       override type Target = SortByContent
       override type Data   = NullsOrdering
       override def wrapRep(base: => SortByContent): SortByContent                                      = base
-      override def toLawRep(base: SortByContent, oldRep: Map[String, SOrdered]): Map[String, SOrdered] = oldRep + ((base.key, base.orderPro))
+      override def buildRep(base: SortByContent, oldRep: Map[String, SOrdered]): Map[String, SOrdered] = oldRep + ((base.key, base.orderPro))
       override def buildData(
           data: NullsOrdering
         , rep: SortByContent

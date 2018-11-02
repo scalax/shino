@@ -71,7 +71,7 @@ object repShape extends DecoderWrapperHelper[EncodeRefContent[(Any, Any)], (Any,
   )(implicit shape: DecoderShape.Aux[Source, D, Out, EncodeRefContent[(Any, Any)], (Any, Any)]): EncodeRefWrapper[Out, D] = {
     val shape1  = shape
     val wrapCol = shape1.wrapRep(rep)
-    val content = shape1.toLawRep(wrapCol, new EncodeRefContent[(Any, Any)] {
+    val content = shape1.buildRep(wrapCol, new EncodeRefContent[(Any, Any)] {
       override def encode(path: Node, indexMap: Map[String, Int]): (Any, Any) = ((), ())
     })
     new EncodeRefWrapper[Out, D] {
@@ -90,7 +90,7 @@ object dataShape extends FormatterWrapperHelper[(List[Node], Map[String, Int]), 
   )(implicit shape: FormatterShape.Aux[Source, D, Out, (List[Node], Map[String, Int]), IndexedSeq[Any], List[Any]]): ShapeWrap[Out, D] = {
     val shape1              = shape
     val wrapCol             = shape1.wrapRep(rep)
-    val (nodeCol, indexCol) = shape1.toLawRep(wrapCol, (List.empty, Map.empty))
+    val (nodeCol, indexCol) = shape1.buildRep(wrapCol, (List.empty, Map.empty))
     val productNode         = ProductNode(ConstArray.from(nodeCol))
 
     def toBase(v: Any): ProductWrapper = {

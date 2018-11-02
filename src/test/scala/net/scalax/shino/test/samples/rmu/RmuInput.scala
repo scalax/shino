@@ -32,7 +32,7 @@ trait RmuInputHelper {
     ): RmuInputWrapper[Out, D] = {
       val shape1  = shape
       val wrapCol = shape1.wrapRep(rep)
-      val reps    = shape1.toLawRep(wrapCol, List.empty)
+      val reps    = shape1.buildRep(wrapCol, List.empty)
       new RmuInputWrapper[Out, D] {
         override val repCol = reps
       }
@@ -60,7 +60,7 @@ trait RmuInputHelper {
         )
       }
 
-      override def toLawRep(
+      override def buildRep(
           base: (String, EncoderShapeValue[JsonObject, List[SlickShapeValueWrap], IndexedSeq[Any]])
         , oldRep: List[(String, EncoderShapeValue[JsonObject, List[SlickShapeValueWrap], IndexedSeq[Any]])]
       ): List[(String, EncoderShapeValue[JsonObject, List[SlickShapeValueWrap], IndexedSeq[Any]])] = base :: oldRep

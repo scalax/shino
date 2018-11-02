@@ -85,7 +85,7 @@ trait CustomRep {
         override def target: EncodeRefWrapTuple2                                             = EncodeRefWrapTuple2((), null)
       }
 
-      val reps  = shape1.toLawRep(wrapCol, zeroModel)
+      val reps  = shape1.buildRep(wrapCol, zeroModel)
       val model = reps.map(r => shape1.takeData(wrapCol, r).current)
 
       new RepEncoderDecoder[Out, D] {
@@ -109,7 +109,7 @@ trait CustomRep {
         override def target: T = shape.pack(base.rep)
       }
 
-      override def toLawRep(base: EncodeRefConvert[T], oldRep: EncodeRefConvert[EncodeRefWrapTuple2]): EncodeRefConvert[EncodeRefWrapTuple2] =
+      override def buildRep(base: EncodeRefConvert[T], oldRep: EncodeRefConvert[EncodeRefWrapTuple2]): EncodeRefConvert[EncodeRefWrapTuple2] =
         new EncodeRefConvert[EncodeRefWrapTuple2] {
           override def customEncodeRef(path: Node, map: Map[String, Int]): EncodeRefWrapTuple2 =
             EncodeRefWrapTuple2(base.customEncodeRef(path, map), oldRep.customEncodeRef(path, map))
@@ -151,7 +151,7 @@ trait CustomRep {
     )(implicit shape: FormatterShape.Aux[Rep, D, Out, (List[ColumnWrap], Int), IndexedSeq[Any], List[Any]]): ModelConvert[Out, D] = {
       val shape1    = shape
       val wrapCol   = shape1.wrapRep(rep)
-      val (reps, _) = shape1.toLawRep(wrapCol, (List.empty, 0))
+      val (reps, _) = shape1.buildRep(wrapCol, (List.empty, 0))
       new ModelConvert[Out, D] {
         override def from(data: List[Any]): D     = shape1.takeData(wrapCol, data).current
         override def to(data: D): IndexedSeq[Any] = shape1.buildData(data, wrapCol, IndexedSeq.empty)
@@ -181,7 +181,7 @@ trait CustomRep {
           }
         }
       }
-      override def toLawRep(base: Int => ColumnWrap, oldRep: (List[ColumnWrap], Int)): (List[ColumnWrap], Int) = (base(oldRep._2) :: oldRep._1, oldRep._2 + 1)
+      override def buildRep(base: Int => ColumnWrap, oldRep: (List[ColumnWrap], Int)): (List[ColumnWrap], Int) = (base(oldRep._2) :: oldRep._1, oldRep._2 + 1)
       override def takeData(rep: Int => ColumnWrap, oldData: List[Any]): SplitData[D, List[Any]]               = SplitData(oldData.head.asInstanceOf[D], oldData.tail)
       override def buildData(data: D, rep: Int => ColumnWrap, oldData: IndexedSeq[Any]): IndexedSeq[Any]       = data +: oldData
     }

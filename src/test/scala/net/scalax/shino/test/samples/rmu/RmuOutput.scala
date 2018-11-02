@@ -32,7 +32,7 @@ trait RmuOutputHelper {
     ): RmuOutputWrapper[Out, D] = {
       val shape1  = shape
       val wrapCol = shape1.wrapRep(rep)
-      val reps    = shape1.toLawRep(wrapCol, List.empty)
+      val reps    = shape1.buildRep(wrapCol, List.empty)
       new RmuOutputWrapper[Out, D] {
         override val repCol = reps
       }
@@ -57,7 +57,7 @@ trait RmuOutputHelper {
         (base.columnInfo.tableColumnSymbol.name, shinoOutput.shaped(base.rep).dmap(d => encoder(d)))
       }
 
-      override def toLawRep(
+      override def buildRep(
           base: (String, DecoderShapeValue[Json, List[SlickShapeValueWrap], List[Any]])
         , oldRep: List[(String, DecoderShapeValue[Json, List[SlickShapeValueWrap], List[Any]])]
       ): List[(String, DecoderShapeValue[Json, List[SlickShapeValueWrap], List[Any]])] = {

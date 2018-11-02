@@ -30,7 +30,7 @@ object Test01 extends App {
         val wrapCol = shape1.wrapRep(rep)
         new FEWrapper[Out, D] {
           override def data(implicit ec: ExecutionContext): Future[Either[Exception, D]] = {
-            val wrap = shape1.toLawRep(wrapCol, WrapHelper(ec, Future.successful(Right(((), ())))))
+            val wrap = shape1.buildRep(wrapCol, WrapHelper(ec, Future.successful(Right(((), ())))))
             wrap.data.map(r => r.right.map(d1 => shape1.takeData(wrapCol, d1).current))(ec)
           }
         }
@@ -43,7 +43,7 @@ object Test01 extends App {
         override type Data   = T
         override type Target = Future[Either[Exception, T]]
         override def wrapRep(base: => RepColumnContent[Future[Either[Exception, T]], T]): Future[Either[Exception, T]] = base.rep
-        override def toLawRep(base: Future[Either[Exception, T]], oldRep: WrapHelper): WrapHelper = {
+        override def buildRep(base: Future[Either[Exception, T]], oldRep: WrapHelper): WrapHelper = {
           val either = oldRep.data.flatMap(s => base.map(d => d.right.flatMap(d1 => s.right.map(s1 => (d1, s1): (Any, Any))))(oldRep.ec))(oldRep.ec)
           WrapHelper(oldRep.ec, either)
         }
@@ -57,7 +57,7 @@ object Test01 extends App {
         override type Data   = T
         override type Target = Either[Exception, T]
         override def wrapRep(base: => RepColumnContent[Either[Exception, T], T]): Either[Exception, T] = base.rep
-        override def toLawRep(base: Either[Exception, T], oldRep: WrapHelper): WrapHelper = {
+        override def buildRep(base: Either[Exception, T], oldRep: WrapHelper): WrapHelper = {
           val either = oldRep.data.map(s => base.right.flatMap(d => s.right.map(s1 => (d, s1): (Any, Any))))(oldRep.ec)
           WrapHelper(oldRep.ec, either)
         }
@@ -71,7 +71,7 @@ object Test01 extends App {
         override type Data   = T
         override type Target = Future[T]
         override def wrapRep(base: => RepColumnContent[Future[T], T]): Future[T] = base.rep
-        override def toLawRep(base: Future[T], oldRep: WrapHelper): WrapHelper = {
+        override def buildRep(base: Future[T], oldRep: WrapHelper): WrapHelper = {
           val either = oldRep.data.flatMap(s => base.map(d => s.right.map(s1 => (d, s1): (Any, Any)))(oldRep.ec))(oldRep.ec)
           WrapHelper(oldRep.ec, either)
         }
@@ -85,7 +85,7 @@ object Test01 extends App {
         override type Data   = T
         override type Target = T
         override def wrapRep(base: => RepColumnContent[T, T]): T = base.rep
-        override def toLawRep(base: T, oldRep: WrapHelper): WrapHelper = {
+        override def buildRep(base: T, oldRep: WrapHelper): WrapHelper = {
           val either = oldRep.data.map(s => s.right.map(s1 => (base, s1): (Any, Any)))(oldRep.ec)
           WrapHelper(oldRep.ec, either)
         }
