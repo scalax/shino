@@ -1,17 +1,17 @@
 package net.scalax.shino.umr
 
-import net.scalax.asuna.mapper.common.{MacroColumnInfo, MacroColumnInfoImpl, RepColumnContent}
+import net.scalax.asuna.mapper.common.{MacroColumnInfo, SingleColumnInfo, SingleRepContent}
 import net.scalax.shino.sortby.NullsOrdering
 import slick.lifted.{Ordered => SOrdered}
 
-trait SortByContent extends RepColumnContent[SOrdered, NullsOrdering] {
+trait SortByContent extends SingleRepContent[SOrdered, NullsOrdering] {
   self =>
 
   val key: String
 
   override def rep: SOrdered
 
-  override lazy val columnInfo: MacroColumnInfo = MacroColumnInfoImpl(tableColumnSymbol = Symbol(key), modelColumnSymbols = List(Symbol(key)))
+  override lazy val columnInfo: SingleColumnInfo = MacroColumnInfo(tableColumnSymbol = Symbol(key), Symbol(key))
 
   def reverse: SortByContent = new SortByContent {
     override val key      = self.key

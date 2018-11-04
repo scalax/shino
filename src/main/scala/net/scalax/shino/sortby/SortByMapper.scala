@@ -1,7 +1,7 @@
 package net.scalax.shino.umr
 
 import net.scalax.asuna.core.encoder.EncoderShape
-import net.scalax.asuna.mapper.common.{MacroColumnInfo, RepColumnContent}
+import net.scalax.asuna.mapper.common.SingleRepContent
 import net.scalax.asuna.mapper.encoder.{EncoderContent, EncoderWrapperHelper}
 import net.scalax.shino.sortby.{NullsOrdering, SortBy}
 import slick.lifted.{Ordered => SOrdered}
@@ -63,13 +63,13 @@ trait SortByMapper {
 
   implicit def sortbyColumnRepImplicit1[D](
       implicit orderMap: D => SOrdered
-  ): EncoderShape.Aux[RepColumnContent[D, NullsOrdering], NullsOrdering, SortByContent, Map[String, SOrdered], Map[String, (SOrdered, NullsOrdering)]] = {
-    new EncoderShape[RepColumnContent[D, NullsOrdering], Map[String, SOrdered], Map[String, (SOrdered, NullsOrdering)]] {
+  ): EncoderShape.Aux[SingleRepContent[D, NullsOrdering], NullsOrdering, SortByContent, Map[String, SOrdered], Map[String, (SOrdered, NullsOrdering)]] = {
+    new EncoderShape[SingleRepContent[D, NullsOrdering], Map[String, SOrdered], Map[String, (SOrdered, NullsOrdering)]] {
       override type Target = SortByContent
       override type Data   = NullsOrdering
-      override def wrapRep(base: => RepColumnContent[D, NullsOrdering]): SortByContent = {
+      override def wrapRep(base: => SingleRepContent[D, NullsOrdering]): SortByContent = {
         val rep = base
-        SortByContent(rep.columnInfo.tableColumnSymbol.name, orderMap(rep.rep))
+        SortByContent(rep.columnInfo.singleModelSymbol.name, orderMap(rep.rep))
       }
       override def buildRep(base: SortByContent, oldRep: Map[String, SOrdered]): Map[String, SOrdered] =
         oldRep + ((base.key, base.rep))
@@ -77,24 +77,5 @@ trait SortByMapper {
         oldData + ((rep.key, (rep.rep, data)))
     }
   }
-
-  /*implicit def sortbyColumnRepImplicit2[D]: EncoderShape.Aux[RepColumnContent[SOrdered, NullsOrdering],
-                                                             NullsOrdering,
-                                                             RepColumnContent[SOrdered, NullsOrdering],
-                                                             Map[String, SOrdered],
-                                                             Map[String, (SOrdered, NullsOrdering)]] = {
-    new EncoderShape[RepColumnContent[SOrdered, NullsOrdering], Map[String, SOrdered], Map[String, (SOrdered, NullsOrdering)]] {
-      override type Target = RepColumnContent[SOrdered, NullsOrdering]
-      override type Data   = NullsOrdering
-      override def wrapRep(base: => RepColumnContent[SOrdered, NullsOrdering]): RepColumnContent[SOrdered, NullsOrdering] = base
-      override def buildRep(base: RepColumnContent[SOrdered, NullsOrdering], oldRep: Map[String, SOrdered]): Map[String, SOrdered] =
-        oldRep + ((base.columnInfo.tableColumnSymbol.name, base.rep))
-      override def buildData(
-          data: NullsOrdering
-        , rep: RepColumnContent[SOrdered, NullsOrdering]
-        , oldData: Map[String, (SOrdered, NullsOrdering)]
-      ): Map[String, (SOrdered, NullsOrdering)] = oldData + ((rep.columnInfo.tableColumnSymbol.name, (rep.rep, data)))
-    }
-  }*/
 
 }
