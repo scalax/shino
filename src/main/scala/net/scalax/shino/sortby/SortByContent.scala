@@ -8,7 +8,7 @@ trait SortByContent extends SingleRepContent[SOrdered, NullsOrdering] {
   self =>
 
   val key: String
-
+  override def defaultValue: Option[NullsOrdering] = Option.empty
   override def rep: SOrdered
 
   override lazy val columnInfo: SingleColumnInfo = MacroColumnInfo(tableColumnSymbol = Symbol(key), Symbol(key))
